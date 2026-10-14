@@ -37,6 +37,7 @@ export async function POST(req: NextRequest, ctx: Ctx): Promise<Response> {
   });
   if (error) {
     if (error.code === "42P01") return fail("module_not_installed", MENSAGEM_MODULO, 409, { requestId });
+    if (error.code === "22008" || error.code === "22007") return fail("validation_failed", "Data inválida.", 422, { requestId });
     const chave = Object.keys(RECUSAS).find((k) => error.message?.includes(k));
     if (chave) { const [code, msg, st] = RECUSAS[chave]!; return fail(code, msg, st, { requestId }); }
     return fail("internal_error", "Erro ao registrar o recebimento.", 500, { requestId });

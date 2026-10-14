@@ -13,6 +13,7 @@ import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
 import { criarContratoSchema } from "@/lib/contratos/esquemas";
 import { cobrancasIniciais, hojeNoFuso } from "@/lib/contratos/regras";
+import { logger } from "@/lib/logger";
 import { requireSupportWrite } from "@/lib/impersonate/support";
 import { createClient } from "@/lib/supabase/server";
 
@@ -71,7 +72,10 @@ export async function POST(req: NextRequest): Promise<Response> {
     .single();
   if (e1) return respostaDeErro(e1, requestId);
 
-  const desfazer = async () => { await supabase.from("contratos").delete().eq("id", contrato.id); };
+  const desfazer = async () => {
+    const { error } = await supabase.from("contratos").delete().eq("id", contrato.id);
+    if (error) logger.error("contratos.rollback_falhou", { requestId, contratoId: contrato.id, code: error.code, message: error.message });
+  };
   const hoje = corpo.inicio > hojeNoFuso() ? corpo.inicio : hojeNoFuso();
 
   for (const forma of corpo.formas) {

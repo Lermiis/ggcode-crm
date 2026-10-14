@@ -25,7 +25,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   // Totais: tudo que pode cair nos três números (atrasadas de qualquer mês + o mês corrente).
   const base = supabase.from("contrato_cobrancas").select("situacao, vencimento, valor_cents, recebida_em").eq("organization_id", orgId);
-  const { data: paraTotais, error: e1 } = await base.or(`and(situacao.eq.a_receber,vencimento.lt.${fimMes}),and(situacao.eq.recebida,recebida_em.gte.${inicioMes})`);
+  const { data: paraTotais, error: e1 } = await base.or(`and(situacao.eq.a_receber,vencimento.lt.${fimMes}),and(situacao.eq.recebida,recebida_em.gte.${inicioMes},recebida_em.lt.${fimMes})`).limit(5000);
   if (e1) return respostaDeErro(e1, requestId);
 
   let q = supabase.from("contrato_cobrancas").select(SELECT_COBRANCA).eq("organization_id", orgId);

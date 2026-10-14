@@ -53,17 +53,27 @@ export async function PATCH(req: NextRequest, ctx: Ctx): Promise<Response> {
   const situacao = lido.data.acao === "encerrar" ? "encerrado" : "cancelado";
   const hoje = hojeNoFuso();
 
+  // Ordem retry-safe: confirma o contrato, faz as escritas secundárias (idempotentes) e só por
+  // último muda a situação. Se uma etapa falhar, o contrato continua "ativo" e dá para repetir.
+  const { data: atual, error: e0 } = await supabase.from("contratos").select("id")
+    .eq("id", id).eq("organization_id", orgId).eq("situacao", "ativo").maybeSingle();
+  if (e0) return respostaDeErro(e0, requestId);
+  if (!atual) return fail("not_found", "Contrato ativo não encontrado.", 404, { requestId });
+
+  const { error: e1 } = await supabase.from("contrato_formas").update({ ativa: false }).eq("contrato_id", id).eq("organization_id", orgId);
+  if (e1) return respostaDeErro(e1, requestId);
+  if (lido.data.cancelar_futuras) {
+    const { error: e2 } = await supabase.from("contrato_cobrancas").update({ situacao: "cancelada", updated_at: new Date().toISOString() })
+      .eq("contrato_id", id).eq("organization_id", orgId).eq("situacao", "a_receber").gt("vencimento", hoje);
+    if (e2) return respostaDeErro(e2, requestId);
+  }
+
   const { data, error } = await supabase.from("contratos")
     .update({ situacao, fim: hoje, updated_at: new Date().toISOString() })
     .eq("id", id).eq("organization_id", orgId).eq("situacao", "ativo").select("id, situacao").maybeSingle();
   if (error) return respostaDeErro(error, requestId);
   if (!data) return fail("not_found", "Contrato ativo não encontrado.", 404, { requestId });
 
-  await supabase.from("contrato_formas").update({ ativa: false }).eq("contrato_id", id).eq("organization_id", orgId);
-  if (lido.data.cancelar_futuras) {
-    await supabase.from("contrato_cobrancas").update({ situacao: "cancelada", updated_at: new Date().toISOString() })
-      .eq("contrato_id", id).eq("organization_id", orgId).eq("situacao", "a_receber").gt("vencimento", hoje);
-  }
   await audit({ action: `contratos.contrato_${situacao}`, resourceType: "contrato", resourceId: id, requestId });
   return ok(data, { requestId });
 }

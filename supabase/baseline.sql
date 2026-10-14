@@ -51029,9 +51029,12 @@ begin
   create policy contratos_insert
     on public.contratos
     for insert
-    with check (public.fn_is_platform_admin()
-                or (organization_id in (select public.fn_user_org_ids())
-                    and public.fn_role_at_least(organization_id, 'manager')));
+    with check ((public.fn_is_platform_admin()
+                 or (organization_id in (select public.fn_user_org_ids())
+                     and public.fn_role_at_least(organization_id, 'manager')))
+                and (contratos.lead_id is null
+                     or exists (select 1 from public.crm_leads l where l.id = contratos.lead_id
+                                 and l.organization_id = contratos.organization_id)));
   drop policy if exists contratos_update on public.contratos;
   create policy contratos_update
     on public.contratos
@@ -51039,9 +51042,12 @@ begin
     using (public.fn_is_platform_admin()
            or (organization_id in (select public.fn_user_org_ids())
                and public.fn_role_at_least(organization_id, 'manager')))
-    with check (public.fn_is_platform_admin()
-                or (organization_id in (select public.fn_user_org_ids())
-                    and public.fn_role_at_least(organization_id, 'manager')));
+    with check ((public.fn_is_platform_admin()
+                 or (organization_id in (select public.fn_user_org_ids())
+                     and public.fn_role_at_least(organization_id, 'manager')))
+                and (contratos.lead_id is null
+                     or exists (select 1 from public.crm_leads l where l.id = contratos.lead_id
+                                 and l.organization_id = contratos.organization_id)));
   drop policy if exists contratos_delete on public.contratos;
   create policy contratos_delete
     on public.contratos
@@ -51108,7 +51114,10 @@ begin
                      and public.fn_role_at_least(organization_id, 'manager')))
                 and situacao <> 'recebida' and financial_entry_id is null and recebida_em is null
                 and exists (select 1 from public.contratos k where k.id = contrato_id
-                             and k.organization_id = contrato_cobrancas.organization_id));
+                             and k.organization_id = contrato_cobrancas.organization_id)
+                and exists (select 1 from public.contrato_formas f where f.id = forma_id
+                             and f.organization_id = contrato_cobrancas.organization_id
+                             and f.contrato_id = contrato_cobrancas.contrato_id));
   drop policy if exists contrato_cobrancas_update on public.contrato_cobrancas;
   create policy contrato_cobrancas_update
     on public.contrato_cobrancas
@@ -51122,7 +51131,10 @@ begin
                      and public.fn_role_at_least(organization_id, 'manager')))
                 and situacao <> 'recebida' and financial_entry_id is null and recebida_em is null
                 and exists (select 1 from public.contratos k where k.id = contrato_id
-                             and k.organization_id = contrato_cobrancas.organization_id));
+                             and k.organization_id = contrato_cobrancas.organization_id)
+                and exists (select 1 from public.contrato_formas f where f.id = forma_id
+                             and f.organization_id = contrato_cobrancas.organization_id
+                             and f.contrato_id = contrato_cobrancas.contrato_id));
   drop policy if exists contrato_cobrancas_delete on public.contrato_cobrancas;
   create policy contrato_cobrancas_delete
     on public.contrato_cobrancas
@@ -51197,6 +51209,7 @@ $$;
 
 revoke execute on function public.fn_contratos_cobranca_receber(uuid, uuid, uuid, date) from public, anon;
 grant execute on function public.fn_contratos_cobranca_receber(uuid, uuid, uuid, date) to authenticated;
+
 
 -- ---- VARREDURA anon: função nova nasce exposta em quem ATUALIZA (migration 0116) ----
 --

@@ -14,6 +14,10 @@ const FORMA = "c1c1c1c1-6666-4000-8000-000000000001";
 const FORMA_REC = "c1c1c1c1-6666-4000-8000-000000000002";
 const PENDENTE = "c1c1c1c1-4444-4000-8000-000000000001";
 const RECEBIDA = "c1c1c1c1-4444-4000-8000-000000000002";
+const PIPELINE_B = "c1c1c1c1-7777-4000-8000-000000000001";
+const STAGE_B = "c1c1c1c1-7777-4000-8000-000000000002";
+const LEAD_B = "c1c1c1c1-5555-4000-8000-000000000002";
+const FORMA_OUTRA_ORG = "c1c1c1c1-6666-4000-8000-000000000003";
 
 const existe = (t: string, id: string) => lastLine(sql(`select exists(select 1 from public.${t} where id = '${id}')::text;`)) === "true";
 
@@ -34,6 +38,11 @@ beforeAll(() => {
     insert into public.contrato_cobrancas (id, organization_id, contrato_id, forma_id, competencia, descricao, vencimento, valor_cents, situacao, recebida_em) values
       ('${PENDENTE}', '${GOV_ORG}', '${CONTRATO}', '${FORMA}', 'x1', 'P', '2026-10-10', 100, 'a_receber', null),
       ('${RECEBIDA}', '${GOV_ORG}', '${CONTRATO_COM_RECEBIDA}', '${FORMA_REC}', 'x2', 'R', '2026-10-10', 100, 'recebida', '2026-10-10') on conflict (id) do nothing;
+    insert into public.contrato_formas (id, organization_id, contrato_id, tipo, valor_cents, primeiro_vencimento) values
+      ('${FORMA_OUTRA_ORG}', '${ORG_B}', '${CONTRATO_OUTRA_ORG}', 'avulso', 100, '2026-10-10') on conflict (id) do nothing;
+    insert into public.crm_pipelines (id, organization_id, name, slug) values ('${PIPELINE_B}', '${ORG_B}', 'RLS B', 'rls-b') on conflict (id) do nothing;
+    insert into public.crm_stages (id, organization_id, pipeline_id, name, slug, position) values ('${STAGE_B}', '${ORG_B}', '${PIPELINE_B}', 'Novo', 'novo', 1000) on conflict (id) do nothing;
+    insert into public.crm_leads (id, organization_id, title, pipeline_id, stage_id) values ('${LEAD_B}', '${ORG_B}', 'Lead B', '${PIPELINE_B}', '${STAGE_B}') on conflict (id) do nothing;
   `);
 });
 
@@ -66,6 +75,19 @@ describe("manager", () => {
   });
   it("não pendura forma nem cobrança em contrato de outra organização", () => {
     expect(writeCountAs(GOV_MANAGER, `insert into public.contrato_formas (organization_id, contrato_id, tipo, valor_cents, primeiro_vencimento) values ('${GOV_ORG}', '${CONTRATO_OUTRA_ORG}', 'avulso', 1, '2026-10-10')`)).toBe(0);
+  });
+  it("cobrança só aponta forma do PRÓPRIO contrato e da própria organização", () => {
+    const ins = (contrato: string, forma: string, comp: string) =>
+      `insert into public.contrato_cobrancas (organization_id, contrato_id, forma_id, competencia, descricao, vencimento, valor_cents) values ('${GOV_ORG}', '${contrato}', '${forma}', '${comp}', 'T', '2026-10-10', 1)`;
+    expect(writeCountAs(GOV_MANAGER, ins(CONTRATO, FORMA_OUTRA_ORG, "z1"))).toBe(0);
+    expect(writeCountAs(GOV_MANAGER, ins(CONTRATO, FORMA_REC, "z2"))).toBe(0);
+    expect(writeCountAs(GOV_MANAGER, ins(CONTRATO, FORMA, "z3"))).toBe(1); // controle positivo
+    expect(writeCountAs(GOV_MANAGER, `update public.contrato_cobrancas set forma_id = '${FORMA_OUTRA_ORG}' where id = '${PENDENTE}'`)).toBe(0);
+  });
+  it("contrato não aponta para negócio de outra organização", () => {
+    expect(writeCountAs(GOV_MANAGER, `insert into public.contratos (organization_id, lead_id, titulo, inicio) values ('${GOV_ORG}', '${LEAD_B}', 'x', '2026-10-01')`)).toBe(0);
+    expect(writeCountAs(GOV_MANAGER, `update public.contratos set lead_id = '${LEAD_B}' where id = '${CONTRATO}'`)).toBe(0);
+    expect(writeCountAs(GOV_MANAGER, `insert into public.contratos (organization_id, lead_id, titulo, inicio) values ('${GOV_ORG}', '${LEAD}', 'ok', '2026-10-01')`)).toBe(1); // controle positivo
   });
   it("não lê contrato de outra organização", () => {
     expect(Number(lastLine(sql(`set role authenticated; select set_config('request.jwt.claims', '{"sub":"${GOV_MANAGER}"}', false);

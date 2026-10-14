@@ -34,5 +34,18 @@ export const lancarEventoSchema = z.object({
 });
 
 export const receberSchema = z.object({ account_id: z.string().uuid(), recebida_em: data.optional() });
-export const alterarContratoSchema = z.object({ acao: z.enum(["encerrar", "cancelar"]), cancelar_futuras: z.boolean().default(true) });
+export const alterarContratoSchema = z.discriminatedUnion("acao", [
+  z.object({ acao: z.enum(["encerrar", "cancelar"]), cancelar_futuras: z.boolean().default(true) }),
+  z
+    .object({ acao: z.literal("editar"), titulo: z.string().trim().min(1).max(120), inicio: data, fim: data.nullish() })
+    .refine((c) => !c.fim || c.fim >= c.inicio, { message: "O fim não pode ser antes do início." }),
+]);
+export const editarFormaSchema = z.object({
+  valor_cents: centavos.optional(),
+  dia_vencimento: z.number().int().min(1).max(31).optional(),
+  descricao: z.string().trim().min(1).max(120).optional(),
+  vencimento: data.optional(),
+  aplicar_futuras: z.boolean().default(false),
+});
+export const refazerParcelamentoSchema = z.object({ parcelas: z.number().int().min(1).max(60), primeiro_vencimento: data });
 export const filtroSchema = z.enum(["atrasadas", "mes", "proximas", "recebidas"]).catch("mes");

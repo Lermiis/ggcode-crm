@@ -11,6 +11,7 @@ import type { Cobranca, Contrato, Forma } from "@/lib/contratos/tipos";
 import { formatCents } from "@/lib/money";
 
 import { ListaDeCobrancas } from "./_cobrancas";
+import { EditarContrato } from "./_editar";
 import { LancarEvento } from "./_evento";
 
 function Erro({ onTentar }: { onTentar: () => void }) {
@@ -71,6 +72,7 @@ function Ficha({ id, podeGerenciar, onFechar }: { id: string; podeGerenciar: boo
   const qc = useQueryClient();
   const [evento, setEvento] = useState<Forma | null>(null);
   const [confirmando, setConfirmando] = useState(false);
+  const [editando, setEditando] = useState(false);
   const ficha = useQuery({
     queryKey: ["contratos", "ficha", id],
     queryFn: async () => (await apiClient.get<{ data: { contrato: Contrato & { contact_id: string | null }; formas: Forma[]; cobrancas: Cobranca[] } }>(`/api/v1/contratos/${id}`)).data,
@@ -104,7 +106,8 @@ function Ficha({ id, podeGerenciar, onFechar }: { id: string; podeGerenciar: boo
             </div>
             <ListaDeCobrancas filtro="mes" onFiltro={() => {}} carregando={false} cobrancas={d.cobrancas} podeGerenciar={podeGerenciar} semFiltros />
             {podeGerenciar && d.contrato.situacao === "ativo" ? (
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditando(true)}>{t("Editar")}</Button>
                 <Button variant="outline" onClick={() => setConfirmando(true)}>{t("Encerrar contrato")}</Button>
               </div>
             ) : null}
@@ -123,6 +126,7 @@ function Ficha({ id, podeGerenciar, onFechar }: { id: string; podeGerenciar: boo
             </DialogContent>
           </Dialog>
         ) : null}
+        {editando && d ? <EditarContrato contrato={d.contrato} formas={d.formas} cobrancas={d.cobrancas} onFechar={() => setEditando(false)} /> : null}
         {evento ? <LancarEvento contratoId={id} forma={evento} onFechar={() => setEvento(null)} /> : null}
       </DialogContent>
     </Dialog>

@@ -666,6 +666,9 @@ export const AUDIT_ACTIONS = [
   "contratos.evento_lancado",
   "contratos.cobranca_recebida",
   "contratos.cobranca_cancelada",
+  "contratos.contrato_editado",
+  "contratos.forma_editada",
+  "contratos.parcelamento_refeito",
   // Módulo opcional Financeiro (GG Code, migration 9002). Criar/pagar/excluir reusam financeiro.lancamento_*.
   "financeiro.lancamento_corrigido",
   "financeiro.acesso_alterado",

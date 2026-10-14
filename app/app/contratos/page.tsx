@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { requireAuth, resolveActiveOrg } from "@/lib/auth/server";
-import { ROLE_RANK } from "@/lib/auth/types";
+import { createClient } from "@/lib/supabase/server";
 
 import { Contratos } from "./_client";
 
@@ -11,5 +11,12 @@ export default async function Page() {
   const user = await requireAuth();
   const org = await resolveActiveOrg(user);
   if (!org) redirect("/app");
-  return <Contratos podeGerenciar={ROLE_RANK[org.role] >= ROLE_RANK.manager} />;
+  const supabase = await createClient();
+  const pode = async (nivel: "ver" | "editar") => {
+    const { data, error } = await supabase.rpc("fn_gf_pode", { p_org: org.orgId, p_nivel: nivel });
+    // Erro da RPC (ex.: módulo ausente) não é "sem acesso": a tela mostra o aviso do módulo e a API recusa escrita.
+    return error ? { erro: true, ok: nivel === "ver" } : { erro: false, ok: data === true };
+  };
+  const [ver, editar] = await Promise.all([pode("ver"), pode("editar")]);
+  return <Contratos podeVer={ver.ok} podeGerenciar={!editar.erro && editar.ok} />;
 }

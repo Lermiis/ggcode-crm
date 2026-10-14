@@ -10,28 +10,25 @@ import type { NextRequest } from "next/server";
 
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
-import { requireRole } from "@/lib/auth/require-role";
 import { criarContratoSchema } from "@/lib/contratos/esquemas";
 import { cobrancasIniciais, hojeNoFuso } from "@/lib/contratos/regras";
 import { logger } from "@/lib/logger";
-import { requireSupportWrite } from "@/lib/impersonate/support";
-import { createClient } from "@/lib/supabase/server";
 
-import { respostaDeErro } from "./_comum";
+import { entrar, respostaDeErro } from "./_comum";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<Response> {
   const requestId = randomUUID();
-  const authz = await requireRole("viewer", { requestId, resource: "contratos" });
-  if (!authz.ok) return authz.response;
-  const supabase = await createClient();
+  const ent = await entrar("ver", "contratos", requestId);
+  if (!ent.ok) return ent.response;
+  const { supabase, orgId } = ent;
   const hoje = hojeNoFuso();
 
   const { data, error } = await supabase
     .from("contratos")
     .select("id, lead_id, titulo, inicio, fim, situacao, crm_leads(title), contrato_formas(tipo, valor_cents, ativa), contrato_cobrancas(vencimento, situacao)")
-    .eq("organization_id", authz.org.orgId)
+    .eq("organization_id", orgId)
     .order("situacao")
     .order("created_at", { ascending: false })
     .limit(500);
@@ -50,16 +47,13 @@ export async function GET(): Promise<Response> {
 
 export async function POST(req: NextRequest): Promise<Response> {
   const requestId = randomUUID();
-  const supportDenied = await requireSupportWrite();
-  if (supportDenied) return supportDenied;
-  const authz = await requireRole("manager", { requestId, resource: "contratos" });
-  if (!authz.ok) return authz.response;
+  const ent = await entrar("editar", "contratos", requestId);
+  if (!ent.ok) return ent.response;
+  const { supabase, orgId } = ent;
 
   const lido = criarContratoSchema.safeParse(await req.json().catch(() => ({})));
   if (!lido.success) return fail("validation_failed", lido.error.issues[0]?.message ?? "corpo inválido", 422, { requestId });
-  const orgId = authz.org.orgId;
   const corpo = lido.data;
-  const supabase = await createClient();
 
   const { data: lead, error: eLead } = await supabase.from("crm_leads").select("id").eq("id", corpo.lead_id).eq("organization_id", orgId).eq("status", "won").maybeSingle();
   if (eLead) return respostaDeErro(eLead, requestId);

@@ -4,27 +4,21 @@ import type { NextRequest } from "next/server";
 
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
-import { requireRole } from "@/lib/auth/require-role";
 import { lancarEventoSchema } from "@/lib/contratos/esquemas";
-import { requireSupportWrite } from "@/lib/impersonate/support";
-import { createClient } from "@/lib/supabase/server";
 
-import { achatarCobranca, respostaDeErro, SELECT_COBRANCA } from "../../_comum";
+import { achatarCobranca, entrar, respostaDeErro, SELECT_COBRANCA } from "../../_comum";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, ctx: Ctx): Promise<Response> {
   const requestId = randomUUID();
-  const supportDenied = await requireSupportWrite();
-  if (supportDenied) return supportDenied;
-  const authz = await requireRole("manager", { requestId, resource: "contratos" });
-  if (!authz.ok) return authz.response;
+  const ent = await entrar("editar", "contratos", requestId);
+  if (!ent.ok) return ent.response;
+  const { supabase, orgId } = ent;
   const lido = lancarEventoSchema.safeParse(await req.json().catch(() => ({})));
   if (!lido.success) return fail("validation_failed", lido.error.issues[0]?.message ?? "corpo inválido", 422, { requestId });
   const { id: contratoId } = await ctx.params;
-  const orgId = authz.org.orgId;
-  const supabase = await createClient();
 
   const { data: forma, error: e1 } = await supabase.from("contrato_formas")
     .select("id, valor_cents, contratos!inner(situacao)").eq("id", lido.data.forma_id).eq("contrato_id", contratoId)

@@ -5,12 +5,9 @@ import type { NextRequest } from "next/server";
 import { moduloAusente } from "@/lib/contratos/modulo";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
-import { requireRole } from "@/lib/auth/require-role";
 import { receberSchema } from "@/lib/contratos/esquemas";
-import { requireSupportWrite } from "@/lib/impersonate/support";
-import { createClient } from "@/lib/supabase/server";
 
-import { MENSAGEM_MODULO } from "../../../_comum";
+import { entrar, MENSAGEM_MODULO } from "../../../_comum";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
@@ -24,17 +21,15 @@ const RECUSAS: Record<string, [string, string, number]> = {
 
 export async function POST(req: NextRequest, ctx: Ctx): Promise<Response> {
   const requestId = randomUUID();
-  const supportDenied = await requireSupportWrite();
-  if (supportDenied) return supportDenied;
-  const authz = await requireRole("manager", { requestId, resource: "contrato_cobrancas" });
-  if (!authz.ok) return authz.response;
+  const ent = await entrar("editar", "contrato_cobrancas", requestId);
+  if (!ent.ok) return ent.response;
+  const { supabase, orgId } = ent;
   const lido = receberSchema.safeParse(await req.json().catch(() => ({})));
   if (!lido.success) return fail("validation_failed", "Escolha a conta.", 422, { requestId });
   const { id } = await ctx.params;
-  const supabase = await createClient();
 
   const { data, error } = await supabase.rpc("fn_contratos_cobranca_receber", {
-    p_org: authz.org.orgId, p_cobranca: id, p_account_id: lido.data.account_id, p_recebida_em: lido.data.recebida_em ?? null,
+    p_org: orgId, p_cobranca: id, p_account_id: lido.data.account_id, p_recebida_em: lido.data.recebida_em ?? null,
   });
   if (error) {
     if (moduloAusente(error)) return fail("module_not_installed", MENSAGEM_MODULO, 409, { requestId });

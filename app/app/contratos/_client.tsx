@@ -16,7 +16,7 @@ import { NovoContrato } from "./_novo";
 export type Filtro = "atrasadas" | "mes" | "proximas" | "recebidas";
 type Resposta = { cobrancas: Cobranca[]; totais: { aReceber: number; recebido: number; atrasado: number; qtdAtrasadas: number } };
 
-export function Contratos({ podeGerenciar }: { podeGerenciar: boolean }) {
+export function Contratos({ podeVer, podeGerenciar }: { podeVer: boolean; podeGerenciar: boolean }) {
   const t = useT();
   const [aba, setAba] = useState<"cobrancas" | "contratos">("cobrancas");
   const [filtro, setFiltro] = useState<Filtro>("mes");
@@ -26,7 +26,12 @@ export function Contratos({ podeGerenciar }: { podeGerenciar: boolean }) {
     queryKey: ["contratos", "cobrancas", filtro],
     queryFn: async () => (await apiClient.get<{ data: Resposta }>(`/api/v1/contratos/cobrancas?filtro=${filtro}`)).data,
     retry: false,
+    enabled: podeVer,
   });
+
+  if (!podeVer) {
+    return <p className="rounded-md border border-border p-3 text-sm text-text-muted" role="status">{t("Você não tem acesso aos Contratos. Peça a um administrador.")}</p>;
+  }
 
   if (cobrancas.error instanceof ApiError && cobrancas.error.code === "module_not_installed") {
     return <p className="rounded-md border border-border p-3 text-sm text-text-muted" role="status">{cobrancas.error.message}</p>;

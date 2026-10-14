@@ -2,21 +2,19 @@
 import { randomUUID } from "node:crypto";
 
 import { ok } from "@/lib/api/wrappers";
-import { requireRole } from "@/lib/auth/require-role";
 import { nomeDoContato } from "@/lib/contacts/rotulo-do-contato";
-import { createClient } from "@/lib/supabase/server";
 
-import { respostaDeErro } from "../_comum";
+import { entrar, respostaDeErro } from "../_comum";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<Response> {
   const requestId = randomUUID();
-  const authz = await requireRole("manager", { requestId, resource: "contratos" });
-  if (!authz.ok) return authz.response;
-  const supabase = await createClient();
+  const ent = await entrar("editar", "contratos", requestId);
+  if (!ent.ok) return ent.response;
+  const { supabase, orgId } = ent;
   const { data, error } = await supabase.from("crm_leads").select("id, title, contacts(name, display_name)")
-    .eq("organization_id", authz.org.orgId).eq("status", "won").order("closed_at", { ascending: false }).limit(300);
+    .eq("organization_id", orgId).eq("status", "won").order("closed_at", { ascending: false }).limit(300);
   if (error) return respostaDeErro(error, requestId);
   return ok((data ?? []).map((l) => {
     const c = l.contacts as { name?: string | null; display_name?: string | null } | null;

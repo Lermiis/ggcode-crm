@@ -15417,6 +15417,10 @@ export const DICIONARIO: Traducoes = {
     es: "Sin contacto vinculado, la etiqueta no se aplica.",
   },
   // GG Code — Financeiro (gestao_financeira)
+  "Editar daqui pra frente": { es: "Editar de ahora en adelante" },
+  "Encerrar recorrência?": { es: "¿Terminar la recurrencia?" },
+  "Mostrando os 500 mais recentes. Use os filtros.": { es: "Mostrando los 500 más recientes. Usa los filtros." },
+  "Recorrências": { es: "Recurrencias" },
   "% da receita": { es: "% de los ingresos" },
   "+ Entrada": { es: "+ Entrada" },
   "+ Saída": { es: "+ Salida" },

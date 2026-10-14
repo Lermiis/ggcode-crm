@@ -42,7 +42,7 @@ export function AbaDre({ podeEditar }: { podeEditar: boolean }) {
                 {linhas.map((l) => (
                   <tr key={l.chave} className={l.destaque ? "bg-surface font-semibold" : ""}>
                     <td className="px-4 py-2">{l.rotulo}</td>
-                    <td className={`px-4 py-2 text-right ${l.valor < 0 ? "text-danger" : ""}`}>{brl(l.valor)}</td>
+                    <td className={`px-4 py-2 text-right ${l.valor < 0 ? "text-error" : ""}`}>{brl(l.valor)}</td>
                     <td className="px-4 py-2 text-right text-text-muted">{l.pct === null ? "—" : `${l.pct.toLocaleString("pt-BR")}%`}</td>
                   </tr>
                 ))}

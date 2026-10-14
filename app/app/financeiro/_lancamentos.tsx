@@ -11,6 +11,7 @@ import { apiClient } from "@/lib/api/client";
 
 import { Carga, SeletorMes, brl, dataBR, mesDeHoje, selectCls, useGf } from "./_comum";
 import type { Categoria } from "./_dre";
+import { Recorrencias } from "./_recorrencias";
 import { LancamentoForm, type Conta, type Edicao } from "./_lancamento-form";
 
 type Item = {
@@ -30,9 +31,10 @@ export function AbaLancamentos({ podeEditar }: { podeEditar: boolean }) {
   const [edicao, setEdicao] = useState<Item | null>(null);
   const [pagando, setPagando] = useState<Item | null>(null);
   const [excluindo, setExcluindo] = useState<Item | null>(null);
+  const [recorr, setRecorr] = useState(false);
 
   const qs = new URLSearchParams({ mes, ...(tipo && { direction: tipo }), ...(categoria && { account_plan_id: categoria }), ...(situacao && { status: situacao }) });
-  const q = useGf<Item[]>(["lancamentos", qs.toString()], `${BASE}/lancamentos?${qs}`);
+  const q = useGf<{ data: Item[]; meta?: { truncado?: boolean } }>(["lancamentos", qs.toString()], `${BASE}/lancamentos?${qs}`, true);
   const cats = useGf<Categoria[]>(["categorias"], `${BASE}/categorias`);
   const contas = useGf<Conta[]>(["contas"], `${BASE}/contas`);
   const prontoParaForm = !!cats.data && !!contas.data;
@@ -51,8 +53,9 @@ export function AbaLancamentos({ podeEditar }: { podeEditar: boolean }) {
         <select className={selectCls} value={situacao} onChange={(e) => setSituacao(e.target.value)} aria-label={t("Situação")}>
           <option value="">{t("Qualquer situação")}</option><option value="pending">{t("Pendente")}</option><option value="paid">{t("Pago")}</option>
         </select>
+        <Button size="sm" variant="ghost" className="ml-auto" disabled={!prontoParaForm} onClick={() => setRecorr(true)}>{t("Recorrências")}</Button>
         {podeEditar ? (
-          <div className="ml-auto flex gap-2">
+          <div className="flex gap-2">
             <Button disabled={!prontoParaForm} onClick={() => setNovo("in")}>{t("+ Entrada")}</Button>
             <Button disabled={!prontoParaForm} variant="outline" onClick={() => setNovo("out")}>{t("+ Saída")}</Button>
           </div>
@@ -60,13 +63,15 @@ export function AbaLancamentos({ podeEditar }: { podeEditar: boolean }) {
       </div>
 
       <Carga q={q}>
-        {(lista) => lista.length === 0 ? <p className="text-sm text-text-muted">{t("Nada aqui.")}</p> : (
+        {({ data: lista, meta }) => lista.length === 0 ? <p className="text-sm text-text-muted">{t("Nada aqui.")}</p> : (
+          <>
+          {meta?.truncado ? <p className="text-xs text-text-muted">{t("Mostrando os 500 mais recentes. Use os filtros.")}</p> : null}
           <ul className="divide-y divide-border rounded-lg border border-border">
             {lista.map((l) => {
               const atrasado = l.status === "pending" && l.entry_date < new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
               return (
                 <li key={l.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3">
-                  <span className={`w-20 text-xs tabular-nums ${atrasado ? "text-danger" : "text-text-muted"}`}>{dataBR(l.entry_date)}</span>
+                  <span className={`w-20 text-xs tabular-nums ${atrasado ? "text-error" : "text-text-muted"}`}>{dataBR(l.entry_date)}</span>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">
                       {l.description || "—"}
@@ -75,22 +80,22 @@ export function AbaLancamentos({ podeEditar }: { podeEditar: boolean }) {
                     </div>
                     <div className="truncate text-xs text-text-muted">{l.categoria?.nome ?? "—"} · {l.conta.nome}</div>
                   </div>
-                  <span className={`w-28 text-right text-sm font-semibold tabular-nums ${l.direction === "out" ? "text-danger" : ""}`}>
+                  <span className={`w-28 text-right text-sm font-semibold tabular-nums ${l.direction === "out" ? "text-error" : ""}`}>
                     {l.direction === "out" ? "−" : ""}{brl(l.amount_cents)}
                   </span>
-                  <span className={`w-20 text-xs ${atrasado ? "text-danger" : "text-text-muted"}`}>
+                  <span className={`w-20 text-xs ${atrasado ? "text-error" : "text-text-muted"}`}>
                     {l.status === "paid" ? t("Pago") : atrasado ? t("Atrasado") : t("Pendente")}
                   </span>
                   {podeEditar ? (
                     <span className="flex gap-1">
                       {l.status === "pending" ? (
                         <>
-                          <Button size="sm" onClick={() => setPagando(l)}>{l.direction === "in" ? t("Receber") : t("Pagar")}</Button>
-                          <Button size="sm" variant="ghost" onClick={() => setEdicao(l)}>{t("Editar")}</Button>
-                          <Button size="sm" variant="ghost" onClick={() => setExcluindo(l)}>{t("Excluir")}</Button>
+                          <Button size="sm" aria-label={`${l.direction === "in" ? t("Receber") : t("Pagar")} ${l.description ?? ""}`} onClick={() => setPagando(l)}>{l.direction === "in" ? t("Receber") : t("Pagar")}</Button>
+                          <Button size="sm" variant="ghost" aria-label={`${t("Editar")} ${l.description ?? ""}`} onClick={() => setEdicao(l)}>{t("Editar")}</Button>
+                          <Button size="sm" variant="ghost" aria-label={`${t("Excluir")} ${l.description ?? ""}`} onClick={() => setExcluindo(l)}>{t("Excluir")}</Button>
                         </>
                       ) : (
-                        <Button size="sm" variant="ghost" onClick={() => setEdicao(l)}>{t("Corrigir")}</Button>
+                        <Button size="sm" variant="ghost" aria-label={`${t("Corrigir")} ${l.description ?? ""}`} onClick={() => setEdicao(l)}>{t("Corrigir")}</Button>
                       )}
                     </span>
                   ) : null}
@@ -98,6 +103,7 @@ export function AbaLancamentos({ podeEditar }: { podeEditar: boolean }) {
               );
             })}
           </ul>
+          </>
         )}
       </Carga>
 
@@ -107,6 +113,7 @@ export function AbaLancamentos({ podeEditar }: { podeEditar: boolean }) {
           edicao={{ id: edicao.id, pago: edicao.status === "paid", amount_cents: edicao.amount_cents, entry_date: edicao.entry_date, description: edicao.description,
             categoriaId: edicao.categoria?.id ?? null, contaId: edicao.conta.id } satisfies Edicao} />
       ) : null}
+      {recorr && prontoParaForm ? <Recorrencias podeEditar={podeEditar} categorias={cats.data!} contas={contas.data!} onFechar={() => setRecorr(false)} /> : null}
       {pagando ? <DialogPagar item={pagando} onFechar={() => setPagando(null)} /> : null}
       {excluindo ? <DialogExcluir item={excluindo} onFechar={() => setExcluindo(null)} /> : null}
     </div>
@@ -152,7 +159,7 @@ function DialogExcluir({ item, onFechar }: { item: Item; onFechar: () => void })
         <p className="text-sm">{item.description} · <b>{brl(item.amount_cents)}</b></p>
         <DialogFooter>
           <Button variant="outline" onClick={onFechar}>{t("Voltar")}</Button>
-          <Button disabled={excluir.isPending} onClick={() => excluir.mutate()}>{t("Excluir")}</Button>
+          <Button variant="destructive" disabled={excluir.isPending} onClick={() => excluir.mutate()}>{t("Excluir")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

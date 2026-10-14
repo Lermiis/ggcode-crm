@@ -28,7 +28,7 @@ export function Financeiro({ podeVer, podeEditar, ehAdmin }: { podeVer: boolean;
       <div className="flex gap-1 overflow-x-auto border-b border-border" role="tablist">
         {abas.map(([a, r]) => (
           <button key={a} role="tab" aria-selected={aba === a} onClick={() => setAba(a)}
-            className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${aba === a ? "border-primary text-text" : "border-transparent text-text-muted"}`}>
+            className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${aba === a ? "border-accent text-text" : "border-transparent text-text-muted"}`}>
             {r}
           </button>
         ))}

@@ -19,8 +19,9 @@ export const somaMes = (m: string, n: number) => {
 export const mesDeHoje = () => new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }).slice(0, 7);
 
 export type ApiLista<T> = { data: T };
-export function useGf<T>(chave: unknown[], url: string): UseQueryResult<T> {
-  return useQuery({ queryKey: ["financeiro", ...chave], queryFn: async () => (await apiClient.get<ApiLista<T>>(url)).data, retry: false });
+/** `bruto`: devolve o corpo inteiro ({data, meta}) em vez de só `data`. */
+export function useGf<T>(chave: unknown[], url: string, bruto = false): UseQueryResult<T> {
+  return useQuery({ queryKey: ["financeiro", ...chave], queryFn: async () => { const r = await apiClient.get<ApiLista<T>>(url); return (bruto ? r : r.data) as T; }, retry: false });
 }
 
 /** Carregando / erro com "Tentar de novo" / módulo não instalado; senão entrega os dados. */
@@ -31,7 +32,7 @@ export function Carga<T>({ q, children }: { q: UseQueryResult<T>; children: (d: 
   }
   if (q.isError) {
     return (
-      <div className="flex items-center gap-3 text-sm text-danger">
+      <div className="flex items-center gap-3 text-sm text-error">
         {t("Não foi possível carregar.")}
         <Button size="sm" variant="outline" onClick={() => void q.refetch()}>{t("Tentar de novo")}</Button>
       </div>

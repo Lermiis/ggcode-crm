@@ -38,7 +38,7 @@ export function LancamentoForm({ direction, edicao, categorias, contas, onFechar
   const lista = categorias.filter((c) => c.direction === direction);
   const centavos = reaisParaCentavos(valor);
   const n = Number(parcelas);
-  const valido = centavos !== null && !!conta && !!descricao.trim() && (forma !== "parcelado" || (Number.isInteger(n) && n >= 2 && n <= 60));
+  const valido = centavos !== null && !(forma === "mensal" && !edicao && fim && fim < hoje) && !!conta && !!descricao.trim() && (forma !== "parcelado" || (Number.isInteger(n) && n >= 2 && n <= 60));
 
   const salvar = useMutation({
     mutationFn: () => {
@@ -64,7 +64,7 @@ export function LancamentoForm({ direction, edicao, categorias, contas, onFechar
           <label className="flex flex-col gap-1 text-sm">{forma === "parcelado" ? t("Valor total (R$)") : t("Valor (R$)")}
             <Input inputMode="decimal" placeholder="0,00" value={valor} onChange={(e) => setValor(e.target.value)} />
           </label>
-          <label className="flex flex-col gap-1 text-sm">{forma === "uma_vez" || edicao ? t("Data") : t("Primeira data")}
+          <label className="flex flex-col gap-1 text-sm">{edicao || forma === "uma_vez" ? t("Data") : forma === "mensal" ? t("Dia do vencimento") : t("Primeira data")}
             <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
           </label>
         </div>
@@ -84,7 +84,7 @@ export function LancamentoForm({ direction, edicao, categorias, contas, onFechar
             </select>
           </label>
         </div>
-        {contas.length === 0 ? <p className="text-sm text-danger">{t("Cadastre uma conta em Configurações › Financeiro.")}</p> : null}
+        {contas.length === 0 ? <p className="text-sm text-error">{t("Cadastre uma conta em Configurações › Financeiro.")}</p> : null}
         {edicao ? null : (
           <>
             <div className="flex flex-wrap items-center gap-3 text-sm">

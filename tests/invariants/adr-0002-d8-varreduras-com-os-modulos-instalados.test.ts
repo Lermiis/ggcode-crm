@@ -173,13 +173,14 @@ const PROVA_DE_MODULO: Record<string, { readonly arquivo: string; readonly razao
   contratos: {
     arquivo: "tests/invariants/contratos-rls-por-operacao.test.ts",
     razao:
-      "JWT real: viewer e agent não criam, não editam e não apagam; manager edita a receber " +
-      "(controle positivo); contrato com cobrança recebida não se apaga; leitura cross-org zero.",
+      "JWT real: viewer e agent não criam, não editam e não apagam; manager com 'editar' em " +
+      "gf_acessos edita a receber (controle positivo; sem linha não lê, ver gf-rls-e-acesso); " +
+      "contrato com cobrança recebida não se apaga; leitura cross-org zero.",
   },
   contrato_formas: {
     arquivo: "tests/invariants/contratos-rls-por-operacao.test.ts",
     razao:
-      "Mesmo arquivo: escrita só manager+ e forma não pendura em contrato de OUTRA organização " +
+      "Mesmo arquivo: escrita só com 'editar' (fn_gf_pode) e forma não pendura em contrato de OUTRA organização " +
       "(insert cross-org recusado pela policy, contagem zero).",
   },
   contrato_cobrancas: {
@@ -187,6 +188,38 @@ const PROVA_DE_MODULO: Record<string, { readonly arquivo: string; readonly razao
     razao:
       "Mesmo arquivo: sessão não marca recebida (só a RPC que lança o caixa), recebida é " +
       "imutável e não se apaga; viewer/agent não escrevem; leitura por papel com controle positivo.",
+  },
+  // GG Code — módulo Financeiro (migration 9002). Acesso por pessoa: fn_gf_pode.
+  gf_categorias: {
+    arquivo: "tests/invariants/gf-rls-e-acesso.test.ts",
+    razao:
+      "JWT real: admin lê e escreve; manager SEM linha em gf_acessos lê zero e não escreve; " +
+      "viewer com 'ver' lê e não escreve; agent com 'editar' escreve (controle positivo); " +
+      "quem tem 'editar' na org A lê zero da org B.",
+  },
+  gf_recorrencias: {
+    arquivo: "tests/invariants/gf-rls-e-acesso.test.ts",
+    razao:
+      "Mesmo arquivo: com 'ver' lê e não escreve; sem linha lê zero; leitura cross-org zero " +
+      "com linha REAL semeada na outra organização.",
+  },
+  gf_parcelamentos: {
+    arquivo: "tests/invariants/gf-rls-e-acesso.test.ts",
+    razao:
+      "Mesmo arquivo: com 'ver' lê e não escreve; sem linha lê zero; leitura cross-org zero " +
+      "com linha REAL semeada na outra organização.",
+  },
+  gf_parcelas: {
+    arquivo: "tests/invariants/gf-rls-e-acesso.test.ts",
+    razao:
+      "Mesmo arquivo: com 'ver' lê e não escreve; sem linha lê zero; leitura cross-org zero " +
+      "com linha REAL semeada na outra organização.",
+  },
+  gf_acessos: {
+    arquivo: "tests/invariants/gf-rls-e-acesso.test.ts",
+    razao:
+      "Mesmo arquivo: só admin lê e escreve — manager com 'editar' não lê nem escreve a própria " +
+      "linha nem a de ninguém; admin da org A não lê a org B.",
   },
   // #1907 — as cinco tabelas da comanda, que nascem em `fn_financeiro_provisionar()`
   // (ADR-0002 D2/D3). A prova comportamental é a MESMA da lista de leitura

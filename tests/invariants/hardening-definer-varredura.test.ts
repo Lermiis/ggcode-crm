@@ -108,7 +108,115 @@ const AUTHENTICATED_PERMITIDO: readonly Excecao[] = [
       "createClient da sessão. Definer porque insere em financial_entries (fora da policy de " +
       "escrita de contrato_cobrancas) e marca a cobrança recebida sob FOR UPDATE na mesma " +
       "transação — mesmo desenho de fn_honorarios_parcela_pagar. Começa por auth.uid() is null " +
-      "e exige fn_role_at_least(p_org, 'manager')."
+      "e exige fn_gf_pode(p_org, 'editar') desde a 9002 (acesso do Financeiro)."
+  },
+  {
+    fn: "fn_gf_semear_categorias(uuid)",
+    razao:
+      "GET app/api/v1/gestao-financeira/categorias/route.ts (semeia na primeira abertura) usa " +
+      "createClient da sessão (Task 4 do plano do Financeiro). Definer porque a RLS do núcleo " +
+      "(financial_entries, account_plans, recurring_entries) dá escrita a manager+ e o Financeiro " +
+      "exige acesso por pessoa: começa por auth.uid() is null e fn_gf_pode(p_org, 'editar') " +
+      "(gf_forbidden), e confere que conta e categoria são da p_org e estão ativas. " +
+      "Idempotente: on conflict do nothing em account_plans e gf_categorias.",
+  },
+  {
+    fn: "fn_gf_lancamento_criar(uuid,text,uuid,uuid,bigint,date,text,boolean,date)",
+    razao:
+      "POST app/api/v1/gestao-financeira/lancamentos/route.ts usa " +
+      "createClient da sessão (Task 4 do plano do Financeiro). Definer porque a RLS do núcleo " +
+      "(financial_entries, account_plans, recurring_entries) dá escrita a manager+ e o Financeiro " +
+      "exige acesso por pessoa: começa por auth.uid() is null e fn_gf_pode(p_org, 'editar') " +
+      "(gf_forbidden), e confere que conta e categoria são da p_org e estão ativas. " +
+      "Cria pendente ou pago (paid_at = meio-dia em São Paulo).",
+  },
+  {
+    fn: "fn_gf_parcelado_criar(uuid,text,uuid,uuid,bigint,integer,date,text)",
+    razao:
+      "POST app/api/v1/gestao-financeira/lancamentos/route.ts (parcelado) usa " +
+      "createClient da sessão (Task 4 do plano do Financeiro). Definer porque a RLS do núcleo " +
+      "(financial_entries, account_plans, recurring_entries) dá escrita a manager+ e o Financeiro " +
+      "exige acesso por pessoa: começa por auth.uid() is null e fn_gf_pode(p_org, 'editar') " +
+      "(gf_forbidden), e confere que conta e categoria são da p_org e estão ativas. " +
+      "N pendentes + gf_parcelamentos + gf_parcelas na mesma transação.",
+  },
+  {
+    fn: "fn_gf_lancamento_editar(uuid,uuid,bigint,date,uuid,uuid,text)",
+    razao:
+      "PATCH app/api/v1/gestao-financeira/lancamentos/[id]/route.ts usa " +
+      "createClient da sessão (Task 4 do plano do Financeiro). Definer porque a RLS do núcleo " +
+      "(financial_entries, account_plans, recurring_entries) dá escrita a manager+ e o Financeiro " +
+      "exige acesso por pessoa: começa por auth.uid() is null e fn_gf_pode(p_org, 'editar') " +
+      "(gf_forbidden), e confere que conta e categoria são da p_org e estão ativas. " +
+      "Só pendente, sob FOR UPDATE; pago recusa lancamento_pago_imutavel.",
+  },
+  {
+    fn: "fn_gf_lancamento_pagar(uuid,uuid,date)",
+    razao:
+      "POST app/api/v1/gestao-financeira/lancamentos/[id]/pagar/route.ts usa " +
+      "createClient da sessão (Task 4 do plano do Financeiro). Definer porque a RLS do núcleo " +
+      "(financial_entries, account_plans, recurring_entries) dá escrita a manager+ e o Financeiro " +
+      "exige acesso por pessoa: começa por auth.uid() is null e fn_gf_pode(p_org, 'editar') " +
+      "(gf_forbidden), e confere que conta e categoria são da p_org e estão ativas. " +
+      "pending → paid sob FOR UPDATE; o segundo clique recusa lancamento_ja_pago.",
+  },
+  {
+    fn: "fn_gf_lancamento_corrigir(uuid,uuid,bigint,date,uuid,uuid,text)",
+    razao:
+      "POST app/api/v1/gestao-financeira/lancamentos/[id]/corrigir/route.ts usa " +
+      "createClient da sessão (Task 4 do plano do Financeiro). Definer porque a RLS do núcleo " +
+      "(financial_entries, account_plans, recurring_entries) dá escrita a manager+ e o Financeiro " +
+      "exige acesso por pessoa: começa por auth.uid() is null e fn_gf_pode(p_org, 'editar') " +
+      "(gf_forbidden), e confere que conta e categoria são da p_org e estão ativas. " +
+      "Pago não muda: contra-lançamento (reversal) + lançamento novo, numa transação.",
+  },
+  {
+    fn: "fn_gf_lancamento_excluir(uuid,uuid)",
+    razao:
+      "DELETE app/api/v1/gestao-financeira/lancamentos/[id]/route.ts usa " +
+      "createClient da sessão (Task 4 do plano do Financeiro). Definer porque a RLS do núcleo " +
+      "(financial_entries, account_plans, recurring_entries) dá escrita a manager+ e o Financeiro " +
+      "exige acesso por pessoa: começa por auth.uid() is null e fn_gf_pode(p_org, 'editar') " +
+      "(gf_forbidden), e confere que conta e categoria são da p_org e estão ativas. " +
+      "Só pendente, sob FOR UPDATE; gf_parcelas cai pela FK.",
+  },
+  {
+    fn: "fn_gf_recorrencia_salvar(uuid,uuid,text,uuid,uuid,bigint,integer,text,date)",
+    razao:
+      "POST app/api/v1/gestao-financeira/recorrencias/route.ts usa " +
+      "createClient da sessão (Task 4 do plano do Financeiro). Definer porque a RLS do núcleo " +
+      "(financial_entries, account_plans, recurring_entries) dá escrita a manager+ e o Financeiro " +
+      "exige acesso por pessoa: começa por auth.uid() is null e fn_gf_pode(p_org, 'editar') " +
+      "(gf_forbidden), e confere que conta e categoria são da p_org e estão ativas. " +
+      "Molde recurring_entries + fim em gf_recorrencias; edição fechada por organization_id.",
+  },
+  {
+    fn: "fn_gf_recorrencia_encerrar(uuid,uuid)",
+    razao:
+      "POST app/api/v1/gestao-financeira/recorrencias/[id]/encerrar/route.ts usa " +
+      "createClient da sessão (Task 4 do plano do Financeiro). Definer porque a RLS do núcleo " +
+      "(financial_entries, account_plans, recurring_entries) dá escrita a manager+ e o Financeiro " +
+      "exige acesso por pessoa: começa por auth.uid() is null e fn_gf_pode(p_org, 'editar') " +
+      "(gf_forbidden), e confere que conta e categoria são da p_org e estão ativas. " +
+      "Desativa o molde e grava o fim, fechado por organization_id.",
+  },
+  {
+    fn: "fn_gf_categoria_salvar(uuid,uuid,text,text,text,boolean)",
+    razao:
+      "POST app/api/v1/gestao-financeira/categorias/route.ts usa " +
+      "createClient da sessão (Task 4 do plano do Financeiro). Definer porque a RLS do núcleo " +
+      "(financial_entries, account_plans, recurring_entries) dá escrita a manager+ e o Financeiro " +
+      "exige acesso por pessoa: começa por auth.uid() is null e fn_gf_pode(p_org, 'editar') " +
+      "(gf_forbidden), e confere que conta e categoria são da p_org e estão ativas. " +
+      "account_plans + gf_categorias; direção de categoria existente não muda.",
+  },
+  {
+    fn: "fn_gf_acesso_definir(uuid,uuid,text)",
+    razao:
+      "POST app/api/v1/gestao-financeira/acessos/route.ts usa createClient da sessão (Task 4 do " +
+      "plano do Financeiro). Definer para gravar gf_acessos numa transação com a conferência de " +
+      "que p_user é membro ATIVO da p_org (user_organizations). Começa por auth.uid() is null e " +
+      "exige fn_role_at_least(p_org, 'admin') (gf_forbidden); 'nenhum' apaga a linha.",
   },
   {
     fn: "fn_finalizar_comanda(uuid,uuid,uuid,integer)",

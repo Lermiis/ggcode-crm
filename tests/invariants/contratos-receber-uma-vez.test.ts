@@ -6,7 +6,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { GOV_MANAGER, GOV_ORG, GOV_VIEWER, lastLine, seedGov, sql } from "./gov-helpers";
 
 /**
- * CONTRATOS — UMA COBRANÇA ENTRA NO CAIXA UMA VEZ SÓ (migration 9001).
+ * CONTRATOS — UMA COBRANÇA ENTRA NO CAIXA UMA VEZ SÓ (migration 9001; acesso pela 9002).
  * Mede: segundo recebimento recusado; dois simultâneos lançam UM; conta de outra org recusada;
  * cobrança cancelada não se recebe.
  */
@@ -48,6 +48,10 @@ beforeAll(() => {
   seedGov();
   sql(`
     select public.fn_contratos_provisionar();
+    select public.fn_gestao_financeira_provisionar();
+    -- Desde a 9002 receber exige 'editar' no Financeiro; o viewer fica com 'ver' (lê, não recebe).
+    insert into public.gf_acessos (organization_id, user_id, nivel) values
+      ('${GOV_ORG}', '${GOV_MANAGER}', 'editar'), ('${GOV_ORG}', '${GOV_VIEWER}', 'ver');
     insert into public.organizations (id, slug, legal_name, display_name) values ('${ORG_B}', 'contratos-b', 'Contratos B', 'Contratos B') on conflict (id) do nothing;
     insert into public.financial_accounts (id, organization_id, name, kind) values
       ('${CONTA_A}', '${GOV_ORG}', 'Caixa A', 'cash'), ('${CONTA_B}', '${ORG_B}', 'Caixa B', 'cash') on conflict (id) do nothing;

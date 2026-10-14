@@ -14296,6 +14296,8 @@ export const DICIONARIO: Traducoes = {
   "Não foi possível carregar.": { es: "No se pudo cargar." },
   "Contratos e receitas": { es: "Contratos e ingresos" },
   "Contratos com clientes, cobranças do mês e o botão Recebido que lança no caixa.": { es: "Contratos con clientes, cobros del mes y el botón Cobrado que registra en la caja." },
+  "Financeiro (gestão)": { es: "Finanzas (gestión)" },
+  "Lançamentos, parcelados, recorrências, DRE e métricas, com acesso por pessoa.": { es: "Movimientos, cuotas, recurrencias, estado de resultados y métricas, con acceso por persona." },
   "Este mês": { es: "Este mes" },
   "Próximas": { es: "Próximas" },
   "Recebidas": { es: "Cobradas" },

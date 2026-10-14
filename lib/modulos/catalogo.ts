@@ -43,6 +43,14 @@ export const CATALOGO_DE_MODULOS: readonly ModuloCatalogo[] = [
       "Contratos com clientes (implantação, mensalidade, por evento, avulso), cobranças do mês " +
       "e botão Recebido que lança no caixa.",
   },
+  {
+    // GG Code — migration 9002. `financeiro` já é o slug das Comandas.
+    slug: "gestao_financeira",
+    nome: "Financeiro (gestão)",
+    descricao:
+      "Lançamentos, parcelados, recorrências, categorias da DRE e acesso por pessoa ao " +
+      "Financeiro e aos Contratos.",
+  },
 ];
 
 export function moduloDoCatalogo(slug: string): ModuloCatalogo | undefined {

@@ -2,7 +2,9 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { GOV_AGENT_A, GOV_MANAGER, GOV_ORG, GOV_VIEWER, lastLine, seedGov, sql, writeCountAs } from "./gov-helpers";
 
-/** A RLS DE CONTRATOS É POR OPERAÇÃO (migration 9001): leitura = membro; escrita = manager;
+/** A RLS DE CONTRATOS É POR OPERAÇÃO (migration 9001; acesso pela 9002): leitura = 'ver' em
+ *  gf_acessos; escrita = 'editar' (aqui: viewer e agent com 'ver', manager com 'editar'; quem
+ *  não tem linha é medido em gf-rls-e-acesso.test.ts);
  *  cobrança recebida é imutável pela sessão; sessão não marca recebida; contrato com
  *  cobrança recebida não se apaga; nada pendura em contrato de outra organização. */
 const ORG_B = "c1c1c1c1-0000-4000-8000-000000000002";
@@ -25,6 +27,9 @@ beforeAll(() => {
   seedGov();
   sql(`
     select public.fn_contratos_provisionar();
+    select public.fn_gestao_financeira_provisionar();
+    insert into public.gf_acessos (organization_id, user_id, nivel) values
+      ('${GOV_ORG}', '${GOV_VIEWER}', 'ver'), ('${GOV_ORG}', '${GOV_AGENT_A}', 'ver'), ('${GOV_ORG}', '${GOV_MANAGER}', 'editar');
     insert into public.organizations (id, slug, legal_name, display_name) values ('${ORG_B}', 'contratos-rls-b', 'Contratos RLS B', 'C RLS B') on conflict (id) do nothing;
     insert into public.crm_leads (id, organization_id, title, pipeline_id, stage_id)
       select '${LEAD}', '${GOV_ORG}', 'Lead RLS', p.id, s.id from public.crm_pipelines p join public.crm_stages s on s.pipeline_id = p.id
@@ -46,7 +51,7 @@ beforeAll(() => {
   `);
 });
 
-describe("viewer e agent só leem", () => {
+describe("viewer e agent com 'ver' só leem", () => {
   for (const [papel, u] of [["viewer", GOV_VIEWER], ["agent", GOV_AGENT_A]] as const) {
     it(`${papel} não cria, não edita, não apaga`, () => {
       expect(writeCountAs(u, `insert into public.contratos (organization_id, lead_id, titulo, inicio) values ('${GOV_ORG}', '${LEAD}', 'x', '2026-10-01')`)).toBe(0);
@@ -61,7 +66,7 @@ describe("viewer e agent só leem", () => {
   }
 });
 
-describe("manager", () => {
+describe("manager com 'editar'", () => {
   it("edita cobrança a receber — controle positivo", () => {
     expect(writeCountAs(GOV_MANAGER, `update public.contrato_cobrancas set descricao = 'P2' where id = '${PENDENTE}'`)).toBe(1);
   });

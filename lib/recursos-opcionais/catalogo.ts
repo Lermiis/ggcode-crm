@@ -129,6 +129,10 @@ const TEXTO_DO_MODULO: Record<ModuloOpcional, { nome: string; oQueFaz: string }>
     nome: "Contratos e receitas",
     oQueFaz: "Contratos com clientes, cobranças do mês e o botão Recebido que lança no caixa.",
   },
+  gestao_financeira: {
+    nome: "Financeiro (gestão)",
+    oQueFaz: "Lançamentos, parcelados, recorrências, DRE e métricas, com acesso por pessoa.",
+  },
   cobranca: {
     nome: "Cobrança dos seus clientes",
     oQueFaz: "Você cria planos e cobra as empresas desta instalação, com teste grátis e suspensão de quem não paga.",

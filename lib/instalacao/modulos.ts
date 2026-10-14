@@ -61,6 +61,7 @@ export const MODULOS_OPCIONAIS = [
   // instalado. `MODULOS_DE_TABELA` abaixo é o que faz `moduloLigado` enxergá-lo.
   "financeiro",
   "contratos",
+  "gestao_financeira",
   "cobranca",
   "login_codex",
 ] as const;
@@ -68,7 +69,7 @@ export type ModuloOpcional = (typeof MODULOS_OPCIONAIS)[number];
 
 /** Os módulos de tabela do ADR-0002 dentro de `MODULOS_OPCIONAIS` — resolvidos por
  * `modulos_instalados.estado = 'ativo'`, nunca por `platform_config`. */
-const MODULOS_DE_TABELA = ["honorarios", "financeiro", "contratos"] as const satisfies readonly ModuloOpcional[];
+const MODULOS_DE_TABELA = ["honorarios", "financeiro", "contratos", "gestao_financeira"] as const satisfies readonly ModuloOpcional[];
 
 /**
  * Só os módulos por FLAG — os que a tela `/admin/sistema` liga e desliga via

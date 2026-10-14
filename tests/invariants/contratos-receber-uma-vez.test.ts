@@ -21,6 +21,7 @@ const COB_CORRIDA = "c0c0c0c0-4444-4000-8000-000000000002";
 const COB_OUTRA_CONTA = "c0c0c0c0-4444-4000-8000-000000000003";
 const COB_CANCELADA = "c0c0c0c0-4444-4000-8000-000000000004";
 const COB_VIEWER = "c0c0c0c0-4444-4000-8000-000000000005";
+const COB_RETRO = "c0c0c0c0-4444-4000-8000-000000000006";
 
 const execFileP = promisify(execFile);
 const container = process.env.TEST_DB_CONTAINER ?? "";
@@ -65,7 +66,8 @@ beforeAll(() => {
       ('${COB_CORRIDA}', '${GOV_ORG}', '${CONTRATO}', '${FORMA}', 'a2', 'Corrida', '2026-10-10', 10000, 'a_receber'),
       ('${COB_OUTRA_CONTA}', '${GOV_ORG}', '${CONTRATO}', '${FORMA}', 'a3', 'Outra conta', '2026-10-10', 10000, 'a_receber'),
       ('${COB_CANCELADA}', '${GOV_ORG}', '${CONTRATO}', '${FORMA}', 'a4', 'Cancelada', '2026-10-10', 10000, 'cancelada'),
-      ('${COB_VIEWER}', '${GOV_ORG}', '${CONTRATO}', '${FORMA}', 'a5', 'Viewer', '2026-10-10', 10000, 'a_receber')
+      ('${COB_VIEWER}', '${GOV_ORG}', '${CONTRATO}', '${FORMA}', 'a5', 'Viewer', '2026-10-10', 10000, 'a_receber'),
+      ('${COB_RETRO}', '${GOV_ORG}', '${CONTRATO}', '${FORMA}', 'a6', 'Retro', '2026-10-10', 10000, 'a_receber')
       on conflict (id) do nothing;
   `);
 });
@@ -102,5 +104,11 @@ describe("recebimento de cobrança é atômico", () => {
     expect(r.ok).toBe(false);
     expect(r.saida).toContain("contratos_forbidden");
     expect(lancamentosDa(COB_VIEWER)).toBe(0);
+  });
+
+  it("recebimento retroativo cai no dia informado (meio-dia de São Paulo), não em now()", async () => {
+    const r = await sessao(COMO_GERENTE + `select public.fn_contratos_cobranca_receber('${GOV_ORG}'::uuid, '${COB_RETRO}'::uuid, '${CONTA_A}'::uuid, '2026-09-30'::date)::text;`);
+    expect(r.ok).toBe(true);
+    expect(lastLine(sql(`select (fe.paid_at at time zone 'America/Sao_Paulo')::text from public.financial_entries fe join public.contrato_cobrancas c on c.financial_entry_id = fe.id where c.id = '${COB_RETRO}';`))).toBe("2026-09-30 12:00:00");
   });
 });

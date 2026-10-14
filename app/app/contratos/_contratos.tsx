@@ -17,7 +17,7 @@ import { LancarEvento } from "./_evento";
 function Erro({ onTentar }: { onTentar: () => void }) {
   const t = useT();
   return (
-    <div className="flex items-center gap-3 text-sm text-danger">
+    <div className="flex items-center gap-3 text-sm text-error">
       {t("Não foi possível carregar.")}
       <Button size="sm" variant="outline" onClick={onTentar}>{t("Tentar de novo")}</Button>
     </div>

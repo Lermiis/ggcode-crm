@@ -149,8 +149,9 @@ export function metricas(i: { de: string; ate: string; lancamentos: Lancamento[]
   const nNovos = contratos.length === 0 ? i.ganhosSemContrato : novos.length;
 
   const recebidos = ls.filter((l) => l.direction === "in" && pagoCaixa(l, de, ate));
+  const identificados = recebidos.filter((l) => l.cliente_id);
   const clientes = new Set(recebidos.map((l) => l.cliente_id).filter((x): x is string => !!x));
-  const ticketMedio = clientes.size === 0 ? nulo("Nenhum recebimento identificado por cliente.") : ok(Math.round(soma(recebidos, (l) => l.amount_cents) / clientes.size));
+  const ticketMedio = clientes.size === 0 ? nulo("Nenhum recebimento identificado por cliente.") : ok(Math.round(soma(identificados, (l) => l.amount_cents) / clientes.size));
 
   const noInicio = contratos.filter((c) => c.criado_em.slice(0, 10) < inicio && !(c.encerrado_em && c.encerrado_em.slice(0, 10) < inicio));
   const encerrados = contratos.filter((c) => c.situacao !== "ativo" && noPeriodo(c.encerrado_em, de, ate));

@@ -25,6 +25,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx): Promise<Response> {
     p_account_id: l.account_id, p_account_plan_id: l.account_plan_id ?? null, p_description: l.description,
   });
   if (error) return respostaDeErro(error, requestId);
+  await audit({ action: "financeiro.lancamento_editado", resourceType: "financial_entry", resourceId: id, requestId });
   return ok({ id }, { requestId });
 }
 

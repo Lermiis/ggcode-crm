@@ -671,6 +671,7 @@ export const AUDIT_ACTIONS = [
   "contratos.parcelamento_refeito",
   // Módulo opcional Financeiro (GG Code, migration 9002). Criar/pagar/excluir reusam financeiro.lancamento_*.
   "financeiro.lancamento_corrigido",
+  "financeiro.lancamento_editado",
   "financeiro.acesso_alterado",
   "fidelidade.ponto_dado",
   "fidelidade.ponto_resgatado",

@@ -399,7 +399,7 @@ begin
   if auth.uid() is null or not public.fn_gf_pode(p_org, 'editar') then
     raise exception 'gf_forbidden' using errcode = '42501';
   end if;
-  select id, direction, status, origin into v from public.financial_entries
+  select id, direction, status, origin, entry_date into v from public.financial_entries
    where id = p_entry and organization_id = p_org
    for update;
   if not found then
@@ -414,6 +414,10 @@ begin
   perform public.fn_gf_conferir_lancamento(p_org, v.direction, p_account_id, p_account_plan_id, p_amount_cents, p_description);
   if p_entry_date is null then
     raise exception 'data_invalida' using errcode = '22023';
+  end if;
+  -- Recorrência regenera (recurring_entry_id, entry_date) ausentes: mover a data duplicaria.
+  if v.origin = 'recurring' and p_entry_date <> v.entry_date then
+    raise exception 'lancamento_recorrente' using errcode = '42501';
   end if;
 
   update public.financial_entries
@@ -554,6 +558,9 @@ begin
   -- Lançamento de comanda é das Comandas (fn_estornar_comanda), não do Financeiro.
   if v.origin = 'sale' then
     raise exception 'lancamento_de_comanda' using errcode = '42501';
+  end if;
+  if v.origin = 'recurring' then
+    raise exception 'lancamento_recorrente' using errcode = '42501';
   end if;
   if v.status <> 'pending' then
     raise exception 'lancamento_pago_imutavel' using errcode = '42501';
@@ -987,7 +994,7 @@ begin
     (organization_id, account_id, direction, amount_cents, description, entry_date,
      status, paid_at, origin, created_by_user_id)
   values (p_org, p_account_id, 'in', v_cob.valor_cents, v_cob.descricao, v_data,
-          'paid', now(), 'manual', auth.uid())
+          'paid', public.fn_gf_meio_dia(v_data), 'manual', auth.uid())
   returning id into v_entry;
 
   update public.contrato_cobrancas

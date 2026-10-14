@@ -128,6 +128,10 @@ describe("metricas (Review Focus 4)", () => {
     expect(m.ticketMedio.valor).toBe(100000);
     expect(m.roiMarketing.valor).toBe(66.7); // (100000 − 60000) ÷ 60000
   });
+  it("ticket médio soma só recebimentos com cliente", () => {
+    const m = metricas({ de: "2026-10", ate: "2026-10", ganhosSemContrato: 0, contratos, lancamentos: [...lancamentos, L({ amount_cents: 900000, status: "paid", paid_date: "2026-10-11" })] });
+    expect(m.ticketMedio.valor).toBe(100000);
+  });
   it("churn de período de 3 meses é dividido por 3", () => {
     const m = metricas({ de: "2026-08", ate: "2026-10", ganhosSemContrato: 0, contratos, lancamentos: [] });
     expect(m.churn.valor).toBe(16.7); // 50 ÷ 3

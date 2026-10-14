@@ -55,14 +55,14 @@ export function Contratos({ podeVer, podeGerenciar }: { podeVer: boolean; podeGe
       <div className="flex gap-1 border-b border-border" role="tablist">
         {(["cobrancas", "contratos"] as const).map((a) => (
           <button key={a} role="tab" aria-selected={aba === a} onClick={() => setAba(a)}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${aba === a ? "border-primary text-text" : "border-transparent text-text-muted"}`}>
+            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${aba === a ? "border-accent text-text" : "border-transparent text-text-muted"}`}>
             {a === "cobrancas" ? t("Cobranças") : t("Contratos")}
           </button>
         ))}
       </div>
 
       {aba === "cobrancas" && cobrancas.isError ? (
-        <div className="flex items-center gap-3 text-sm text-danger">
+        <div className="flex items-center gap-3 text-sm text-error">
           {t("Não foi possível carregar.")}
           <Button size="sm" variant="outline" onClick={() => void cobrancas.refetch()}>{t("Tentar de novo")}</Button>
         </div>
@@ -83,7 +83,7 @@ function Numero({ rotulo, valor, extra, perigo, onClick }: { rotulo: string; val
   return (
     <Tag onClick={onClick} className="rounded-lg border border-border p-4 text-left">
       <div className="text-xs font-medium text-text-muted">{rotulo}</div>
-      <div className={`mt-1 text-2xl font-semibold tabular-nums ${perigo ? "text-danger" : ""}`}>
+      <div className={`mt-1 text-2xl font-semibold tabular-nums ${perigo ? "text-error" : ""}`}>
         {valor == null ? "—" : formatCents(valor, "BRL")}
         {extra ? <span className="ml-2 text-sm font-normal">({extra})</span> : null}
       </div>

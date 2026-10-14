@@ -15,6 +15,7 @@ export const MENSAGEM_MODULO_GF =
 const RECUSAS: Record<string, [string, string, number]> = {
   gf_forbidden: ["forbidden", "Sem acesso ao Financeiro.", 403],
   lancamento_pago_imutavel: ["conflict", "Lançamento pago não muda. Use Corrigir.", 409],
+  lancamento_recorrente: ["conflict", "Lançamento de recorrência: encerre a recorrência ou marque como pago.", 409],
   lancamento_de_comanda: ["conflict", "Lançamento de comanda é gerido pelas Comandas.", 409],
   lancamento_ja_pago: ["conflict", "Este lançamento já está pago.", 409],
   lancamento_nao_pago: ["conflict", "Só lançamento pago pode ser corrigido.", 409],

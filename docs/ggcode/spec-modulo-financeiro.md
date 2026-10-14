@@ -165,3 +165,9 @@ O PC agora tem Docker Desktop. Por isso:
   - lançar assinatura recorrente, parcelado e custo de anúncio;
   - conferir DRE, fluxo e métricas;
   - dar e tirar acesso de um usuário de teste.
+
+## Notas de versão
+
+- Após o deploy, quem não é admin perde o acesso a Contratos até receber permissão em Financeiro › Acesso.
+- Instalar o módulo `gestao_financeira` só é necessário para dar acesso a não-admins; admins da organização usam sem instalar.
+- Sessões de admin/suporte da plataforma recebem 403 nas rotas do Financeiro (`fn_gf_pode` exige ser admin da organização).

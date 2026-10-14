@@ -45,7 +45,7 @@ export function ListaDeCobrancas({ filtro, onFiltro, cobrancas, carregando, pode
                   <div className="truncate text-sm font-medium">{c.cliente}</div>
                   <div className="truncate text-xs text-text-muted">{c.descricao} · {c.contrato_titulo}</div>
                 </div>
-                <div className={`text-right text-xs ${s === "atrasada" ? "text-danger" : "text-text-muted"}`}>
+                <div className={`text-right text-xs ${s === "atrasada" ? "text-error" : "text-text-muted"}`}>
                   {s === "cancelada" ? t("Cancelada") : s === "recebida" && c.recebida_em ? `${t("Recebida")} ${dataBR(c.recebida_em)}` : `${s === "atrasada" ? t("Venceu") : t("Vence")} ${dataBR(c.vencimento)}`}
                 </div>
                 <div className={`w-28 text-right text-sm font-semibold tabular-nums ${s === "cancelada" ? "text-text-muted line-through" : ""}`}>{formatCents(c.valor_cents, "BRL")}</div>
@@ -103,7 +103,7 @@ function DialogReceber({ cobranca, onFechar }: { cobranca: Cobranca; onFechar: (
           </select>
         </label>
         {contas.data && contas.data.length === 0 ? (
-          <p className="text-sm text-danger">{t("Cadastre uma conta em Configurações › Financeiro.")}</p>
+          <p className="text-sm text-error">{t("Cadastre uma conta em Configurações › Financeiro.")}</p>
         ) : null}
         <label className="flex flex-col gap-1 text-sm">{t("Data")}
           <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />

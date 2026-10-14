@@ -235,3 +235,27 @@ describe("fim da recorrência (fn_gf_encerrar_recorrencias_vencidas, cron gf-rec
     expect(valor(`set role service_role; select public.fn_gf_encerrar_recorrencias_vencidas();`)).toBe("0"); // idempotente
   });
 });
+
+describe("lançamento pendente de recorrência (o gerador recriaria o que faltasse)", () => {
+  const MOLDE = "c3c3c3c3-8888-4000-8000-000000000010";
+  const PEND = "c3c3c3c3-8888-4000-8000-000000000011";
+  beforeAll(() => {
+    sql(`
+      insert into public.recurring_entries (id, organization_id, name, account_id, direction, amount_cents, day_of_month)
+        values ('${MOLDE}', '${GOV_ORG}', 'Aluguel', '${CONTA_A}', 'out', 100, 5);
+      insert into public.financial_entries (id, organization_id, account_id, direction, amount_cents, entry_date, status, origin, recurring_entry_id)
+        values ('${PEND}', '${GOV_ORG}', '${CONTA_A}', 'out', 100, '2026-11-05', 'pending', 'recurring', '${MOLDE}');
+    `);
+  });
+
+  it("excluir é recusado (lancamento_recorrente) e a linha fica", () => {
+    expect(como(GOV_AGENT_A, `public.fn_gf_lancamento_excluir('${GOV_ORG}', '${PEND}')`).saida).toContain("lancamento_recorrente");
+    expect(valor(`select count(*) from public.financial_entries where id = '${PEND}';`)).toBe("1");
+  });
+
+  it("editar: mudar a data é recusado; valor/descrição/conta passam", () => {
+    expect(como(GOV_AGENT_A, `public.fn_gf_lancamento_editar('${GOV_ORG}', '${PEND}', 100, '2026-11-06', '${CONTA_A}', null, 'x')`).saida).toContain("lancamento_recorrente");
+    expect(como(GOV_AGENT_A, `public.fn_gf_lancamento_editar('${GOV_ORG}', '${PEND}', 250, '2026-11-05', '${CONTA_A}', null, 'novo')`).ok).toBe(true);
+    expect(valor(`select amount_cents || '|' || entry_date || '|' || description from public.financial_entries where id = '${PEND}';`)).toBe("250|2026-11-05|novo");
+  });
+});

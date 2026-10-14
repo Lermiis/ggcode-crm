@@ -92,7 +92,7 @@ export function AbaLancamentos({ podeEditar }: { podeEditar: boolean }) {
                         <>
                           <Button size="sm" aria-label={`${l.direction === "in" ? t("Receber") : t("Pagar")} ${l.description ?? ""}`} onClick={() => setPagando(l)}>{l.direction === "in" ? t("Receber") : t("Pagar")}</Button>
                           <Button size="sm" variant="ghost" aria-label={`${t("Editar")} ${l.description ?? ""}`} onClick={() => setEdicao(l)}>{t("Editar")}</Button>
-                          <Button size="sm" variant="ghost" aria-label={`${t("Excluir")} ${l.description ?? ""}`} onClick={() => setExcluindo(l)}>{t("Excluir")}</Button>
+                          {l.recorrente ? null : <Button size="sm" variant="ghost" aria-label={`${t("Excluir")} ${l.description ?? ""}`} onClick={() => setExcluindo(l)}>{t("Excluir")}</Button>}
                         </>
                       ) : (
                         <Button size="sm" variant="ghost" aria-label={`${t("Corrigir")} ${l.description ?? ""}`} onClick={() => setEdicao(l)}>{t("Corrigir")}</Button>
@@ -110,7 +110,7 @@ export function AbaLancamentos({ podeEditar }: { podeEditar: boolean }) {
       {novo && prontoParaForm ? <LancamentoForm direction={novo} categorias={cats.data!} contas={contas.data!} onFechar={() => setNovo(null)} /> : null}
       {edicao && prontoParaForm ? (
         <LancamentoForm direction={edicao.direction} categorias={cats.data!} contas={contas.data!} onFechar={() => setEdicao(null)}
-          edicao={{ id: edicao.id, pago: edicao.status === "paid", amount_cents: edicao.amount_cents, entry_date: edicao.entry_date, description: edicao.description,
+          edicao={{ id: edicao.id, pago: edicao.status === "paid", amount_cents: edicao.amount_cents, recorrente: edicao.recorrente, entry_date: edicao.entry_date, description: edicao.description,
             categoriaId: edicao.categoria?.id ?? null, contaId: edicao.conta.id } satisfies Edicao} />
       ) : null}
       {recorr && prontoParaForm ? <Recorrencias podeEditar={podeEditar} categorias={cats.data!} contas={contas.data!} onFechar={() => setRecorr(false)} /> : null}

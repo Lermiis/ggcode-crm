@@ -14,7 +14,7 @@ import type { Categoria } from "./_dre";
 import { selectCls } from "./_comum";
 
 export type Conta = { id: string; nome: string; saldo_cents: number };
-export type Edicao = { id: string; pago: boolean; amount_cents: number; entry_date: string; description: string | null; categoriaId: string | null; contaId: string };
+export type Edicao = { id: string; pago: boolean; recorrente?: boolean; amount_cents: number; entry_date: string; description: string | null; categoriaId: string | null; contaId: string };
 type Forma = "uma_vez" | "parcelado" | "mensal";
 const BASE = "/api/v1/gestao-financeira";
 
@@ -65,7 +65,7 @@ export function LancamentoForm({ direction, edicao, categorias, contas, onFechar
             <Input inputMode="decimal" placeholder="0,00" value={valor} onChange={(e) => setValor(e.target.value)} />
           </label>
           <label className="flex flex-col gap-1 text-sm">{edicao || forma === "uma_vez" ? t("Data") : forma === "mensal" ? t("Dia do vencimento") : t("Primeira data")}
-            <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
+            <Input type="date" value={data} disabled={!!edicao?.recorrente && !edicao.pago} onChange={(e) => setData(e.target.value)} />
           </label>
         </div>
         <label className="flex flex-col gap-1 text-sm">{t("Descrição")}

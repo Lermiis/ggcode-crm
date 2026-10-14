@@ -659,6 +659,13 @@ export const AUDIT_ACTIONS = [
   "honorarios.contrato_criado",
   "honorarios.parcela_criada",
   "honorarios.parcela_paga",
+  // Módulo opcional Contratos (GG Code, migration 9001).
+  "contratos.contrato_criado",
+  "contratos.contrato_encerrado",
+  "contratos.contrato_cancelado",
+  "contratos.evento_lancado",
+  "contratos.cobranca_recebida",
+  "contratos.cobranca_cancelada",
   "fidelidade.ponto_dado",
   "fidelidade.ponto_resgatado",
   "financeiro.recorrencia_gerada",

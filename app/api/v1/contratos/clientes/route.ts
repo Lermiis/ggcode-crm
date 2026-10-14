@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 
 import { ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
+import { nomeDoContato } from "@/lib/contacts/rotulo-do-contato";
 import { createClient } from "@/lib/supabase/server";
 
 import { respostaDeErro } from "../_comum";
@@ -19,6 +20,6 @@ export async function GET(): Promise<Response> {
   if (error) return respostaDeErro(error, requestId);
   return ok((data ?? []).map((l) => {
     const c = l.contacts as { name?: string | null; display_name?: string | null } | null;
-    return { id: l.id, title: l.title, contact_name: c?.display_name ?? c?.name ?? null };
+    return { id: l.id, title: l.title, contact_name: nomeDoContato(c) };
   }), { requestId });
 }

@@ -145,9 +145,13 @@ describe("metricas (Review Focus 4)", () => {
 describe("guardas de divisão", () => {
   it("CAC arredondado a 0 → ltvCac e payback null, nunca Infinity", () => {
     const contratos = Array.from({ length: 5 }, (_, n) => ({ id: `n${n}`, inicio: "2026-10-01", fim: null, situacao: "ativo" as const, criado_em: "2026-10-02", encerrado_em: null, mensal_cents: 10000 }));
+    // contrato encerrado com fim: dá duração média e portanto LTV, para a guarda de CAC ser alcançada
+    contratos.push({ id: "old", inicio: "2026-01-01", fim: "2026-07-01", situacao: "encerrado" as never, criado_em: "2026-01-01", encerrado_em: "2026-07-01", mensal_cents: 10000 });
     const m = metricas({ de: "2026-10", ate: "2026-10", ganhosSemContrato: 0, contratos,
       lancamentos: [L({ direction: "out", grupo: "marketing", conta_cac: true, amount_cents: 1 })] });
     expect(m.cac.valor).toBe(0);
+    expect(m.ltv.valor).not.toBeNull();
+    expect(m.ltvCac).toEqual({ valor: null, motivo: "CAC indisponível." });
     expect(m.ltvCac.valor).toBeNull();
     expect(m.payback.valor).toBeNull();
   });

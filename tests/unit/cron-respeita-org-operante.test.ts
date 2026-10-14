@@ -55,6 +55,7 @@ const SEM_FILTRO: Record<string, string> = {
   "canal-mudo-watcher": "só abre aviso na Central da própria org; sem custo nem saída",
   "case-stale-watcher": "só reabre aviso de caso na Central; sem custo nem saída",
   "channel-health": "só pergunta ao transporte se a sessão está de pé; nenhuma mensagem ao cliente",
+  "contratos-mensalidades": "só gera cobrança a receber do contrato; escrita interna, sem custo nem saída",
   "contact-avatars": "baixa a foto de perfil: deliberadamente não gatilhado (spec §4)",
   "contact-birthdays": "só emite contact.birthday; o consumidor (automationRulesHandler) é 'pula'",
   "contact-phones": "só consulta o transporte para achar o telefone; nenhuma mensagem ao cliente",

@@ -48,6 +48,9 @@
  */
 export const NAMESPACE_DESTE_REPO = "ghcr.io/lermiis";
 
+/** Nome do repositório no GitHub (a URL de origem é github.com/<dono>/<nome>). */
+export const NOME_DESTE_REPO = "ggcode-crm";
+
 /**
  * O dono de uma referência `<registry>/<dono>`.
  *

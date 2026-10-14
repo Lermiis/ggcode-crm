@@ -35,6 +35,14 @@ export const CATALOGO_DE_MODULOS: readonly ModuloCatalogo[] = [
       "continua no sistema mesmo sem este módulo. Toda instalação anterior a esta versão " +
       "continua com Comandas ligada.",
   },
+  {
+    // GG Code — migration 9001.
+    slug: "contratos",
+    nome: "Contratos e receitas",
+    descricao:
+      "Contratos com clientes (implantação, mensalidade, por evento, avulso), cobranças do mês " +
+      "e botão Recebido que lança no caixa.",
+  },
 ];
 
 export function moduloDoCatalogo(slug: string): ModuloCatalogo | undefined {

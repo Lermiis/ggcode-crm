@@ -169,6 +169,25 @@ const PROVA_DE_MODULO: Record<string, { readonly arquivo: string; readonly razao
       "imutabilidade da parcela paga (status e financial_entry_id não mudam sem o caixa) e a " +
       "recusa de FK cross-org. A leitura cross-org por contagem é medida neste arquivo.",
   },
+  // GG Code — módulo Contratos (migration 9001).
+  contratos: {
+    arquivo: "tests/invariants/contratos-rls-por-operacao.test.ts",
+    razao:
+      "JWT real: viewer e agent não criam, não editam e não apagam; manager edita a receber " +
+      "(controle positivo); contrato com cobrança recebida não se apaga; leitura cross-org zero.",
+  },
+  contrato_formas: {
+    arquivo: "tests/invariants/contratos-rls-por-operacao.test.ts",
+    razao:
+      "Mesmo arquivo: escrita só manager+ e forma não pendura em contrato de OUTRA organização " +
+      "(insert cross-org recusado pela policy, contagem zero).",
+  },
+  contrato_cobrancas: {
+    arquivo: "tests/invariants/contratos-rls-por-operacao.test.ts",
+    razao:
+      "Mesmo arquivo: sessão não marca recebida (só a RPC que lança o caixa), recebida é " +
+      "imutável e não se apaga; viewer/agent não escrevem; leitura por papel com controle positivo.",
+  },
   // #1907 — as cinco tabelas da comanda, que nascem em `fn_financeiro_provisionar()`
   // (ADR-0002 D2/D3). A prova comportamental é a MESMA da lista de leitura
   // org-scoped de `rls-isolation.test.ts`: linha REAL semeada por organização e

@@ -70,8 +70,9 @@ export function mensalidadesDevidas(
 ): CobrancaNova[] {
   const [a, m] = ymd(hoje);
   const [a2, m2] = proximoMes(a, m);
+  const desde = contrato.inicio > hoje ? contrato.inicio : hoje;
   return [mensalidade(a, m, f.dia_vencimento, f.valor_cents), mensalidade(a2, m2, f.dia_vencimento, f.valor_cents)].filter(
-    (c) => c.competencia >= contrato.inicio.slice(0, 7) && (!contrato.fim || c.competencia <= contrato.fim.slice(0, 7)),
+    (c) => c.vencimento >= desde && (!contrato.fim || c.vencimento <= contrato.fim),
   );
 }
 

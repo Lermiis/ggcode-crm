@@ -9,6 +9,7 @@ export const MENSAGEM_MODULO =
 export function respostaDeErro(error: { code?: string; message?: string }, requestId: string): Response {
   if (moduloAusente(error)) return fail("module_not_installed", MENSAGEM_MODULO, 409, { requestId });
   if (error.code === "23503") return fail("validation_failed", "Referência inválida para esta organização.", 422, { requestId });
+  if (error.code === "23514") return fail("validation_failed", "Dados inválidos para este contrato.", 422, { requestId });
   if (error.code === "23505") return fail("conflict", "Esta cobrança já existe.", 409, { requestId });
   if (error.code === "22008" || error.code === "22007") return fail("validation_failed", "Data inválida.", 422, { requestId });
   logger.error("contratos.erro_inesperado", { requestId, code: error.code, message: error.message });

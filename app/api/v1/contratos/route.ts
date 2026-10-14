@@ -61,9 +61,9 @@ export async function POST(req: NextRequest): Promise<Response> {
   const corpo = lido.data;
   const supabase = await createClient();
 
-  const { data: lead, error: eLead } = await supabase.from("crm_leads").select("id").eq("id", corpo.lead_id).eq("organization_id", orgId).maybeSingle();
+  const { data: lead, error: eLead } = await supabase.from("crm_leads").select("id").eq("id", corpo.lead_id).eq("organization_id", orgId).eq("status", "won").maybeSingle();
   if (eLead) return respostaDeErro(eLead, requestId);
-  if (!lead) return fail("validation_failed", "Negócio inválido para esta organização.", 422, { requestId });
+  if (!lead) return fail("validation_failed", "Escolha um negócio fechado (ganho).", 422, { requestId });
 
   const { data: contrato, error: e1 } = await supabase
     .from("contratos")

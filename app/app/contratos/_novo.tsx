@@ -14,6 +14,7 @@ import type { TipoForma } from "@/lib/contratos/tipos";
 
 type Cliente = { id: string; title: string; contact_name: string | null };
 type FormaRascunho = { tipo: TipoForma; valor: string; parcelas: string; venc: string; dia: string; descricao: string };
+const inteiroEntre = (s: string, min: number, max: number) => /^\d+$/.test(s.trim()) && Number(s) >= min && Number(s) <= max;
 const vazia = (tipo: TipoForma): FormaRascunho => ({ tipo, valor: "", parcelas: "1", venc: hojeNoFuso(), dia: "10", descricao: "" });
 
 export function NovoContrato({ onFechar }: { onFechar: () => void }) {
@@ -45,7 +46,9 @@ export function NovoContrato({ onFechar }: { onFechar: () => void }) {
   });
 
   const campo = "rounded-md border border-border bg-bg px-2 py-2 text-sm text-text";
-  const valido = lead && titulo.trim() && formas.length > 0 && formas.every((f) => reaisParaCentavos(f.valor) !== null);
+  const valido = lead && titulo.trim() && formas.length > 0 && formas.every((f) => reaisParaCentavos(f.valor) !== null
+    && (f.tipo !== "mensalidade" || inteiroEntre(f.dia, 1, 31))
+    && (f.tipo !== "implantacao" || inteiroEntre(f.parcelas, 1, 60)));
   return (
     <Dialog open onOpenChange={(o) => !o && onFechar()}>
       <DialogContent className="max-w-xl">

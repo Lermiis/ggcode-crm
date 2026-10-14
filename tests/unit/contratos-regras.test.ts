@@ -69,14 +69,31 @@ describe("cobrancasIniciais", () => {
 
 describe("mensalidadesDevidas", () => {
   const f = { dia_vencimento: 10, valor_cents: 50000 };
-  it("devolve o mês corrente e o seguinte", () => {
-    expect(mensalidadesDevidas(f, { inicio: "2026-01-01", fim: null }, "2026-10-14").map((c) => c.competencia)).toEqual(["2026-10", "2026-11"]);
+  const comp = (i: { inicio: string; fim: string | null }, hoje: string, ff = f) => mensalidadesDevidas(ff, i, hoje).map((c) => c.competencia);
+  it("não gera mensalidade já vencida: só a do mês seguinte", () => {
+    expect(comp({ inicio: "2026-01-01", fim: null }, "2026-10-14")).toEqual(["2026-11"]);
   });
-  it("não gera competência depois do fim (Review Focus 5)", () => {
-    expect(mensalidadesDevidas(f, { inicio: "2026-01-01", fim: "2026-10-31" }, "2026-10-14").map((c) => c.competencia)).toEqual(["2026-10"]);
+  it("contrato criado em 14/10 (dia 10): cron em 15/10 não gera 10/10", () => {
+    expect(comp({ inicio: "2026-10-14", fim: null }, "2026-10-15")).toEqual(["2026-11"]);
   });
-  it("não gera competência antes do início", () => {
-    expect(mensalidadesDevidas(f, { inicio: "2026-11-05", fim: null }, "2026-10-14").map((c) => c.competencia)).toEqual(["2026-11"]);
+  it("mês corrente ainda por vir e mês seguinte", () => {
+    expect(comp({ inicio: "2026-01-01", fim: null }, "2026-10-05")).toEqual(["2026-10", "2026-11"]);
+  });
+  it("início futuro no meio do mês: não gera vencimento anterior ao início", () => {
+    expect(comp({ inicio: "2026-12-15", fim: null }, "2026-12-01")).toEqual(["2027-01"]);
+  });
+  it("fim no meio do mês: não gera vencimento depois do fim", () => {
+    expect(comp({ inicio: "2026-01-01", fim: "2027-03-15" }, "2027-03-01", { dia_vencimento: 20, valor_cents: 1 })).toEqual([]);
+    expect(comp({ inicio: "2026-01-01", fim: "2027-03-15" }, "2027-02-01", { dia_vencimento: 20, valor_cents: 1 })).toEqual(["2027-02"]);
+  });
+  it("não gera depois do fim (Review Focus 5)", () => {
+    expect(comp({ inicio: "2026-01-01", fim: "2026-10-31" }, "2026-10-05")).toEqual(["2026-10"]);
+  });
+  it("virada de ano: dezembro já vencido gera só janeiro", () => {
+    expect(comp({ inicio: "2026-01-01", fim: null }, "2026-12-20")).toEqual(["2027-01"]);
+  });
+  it("virada de ano: dezembro por vir gera dezembro e janeiro", () => {
+    expect(comp({ inicio: "2026-01-01", fim: null }, "2026-12-05")).toEqual(["2026-12", "2027-01"]);
   });
 });
 

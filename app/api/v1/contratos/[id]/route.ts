@@ -55,7 +55,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx): Promise<Response> {
 
   // Ordem retry-safe: confirma o contrato, faz as escritas secundárias (idempotentes) e só por
   // último muda a situação. Se uma etapa falhar, o contrato continua "ativo" e dá para repetir.
-  const { data: atual, error: e0 } = await supabase.from("contratos").select("id")
+  const { data: atual, error: e0 } = await supabase.from("contratos").select("id, inicio")
     .eq("id", id).eq("organization_id", orgId).eq("situacao", "ativo").maybeSingle();
   if (e0) return respostaDeErro(e0, requestId);
   if (!atual) return fail("not_found", "Contrato ativo não encontrado.", 404, { requestId });
@@ -69,7 +69,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx): Promise<Response> {
   }
 
   const { data, error } = await supabase.from("contratos")
-    .update({ situacao, fim: hoje, updated_at: new Date().toISOString() })
+    .update({ situacao, fim: hoje < atual.inicio ? atual.inicio : hoje, updated_at: new Date().toISOString() })
     .eq("id", id).eq("organization_id", orgId).eq("situacao", "ativo").select("id, situacao").maybeSingle();
   if (error) return respostaDeErro(error, requestId);
   if (!data) return fail("not_found", "Contrato ativo não encontrado.", 404, { requestId });

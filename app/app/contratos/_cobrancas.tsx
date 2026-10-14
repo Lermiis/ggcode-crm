@@ -46,9 +46,9 @@ export function ListaDeCobrancas({ filtro, onFiltro, cobrancas, carregando, pode
                   <div className="truncate text-xs text-text-muted">{c.descricao} · {c.contrato_titulo}</div>
                 </div>
                 <div className={`text-right text-xs ${s === "atrasada" ? "text-danger" : "text-text-muted"}`}>
-                  {s === "recebida" && c.recebida_em ? `${t("Recebida")} ${dataBR(c.recebida_em)}` : `${s === "atrasada" ? t("Venceu") : t("Vence")} ${dataBR(c.vencimento)}`}
+                  {s === "cancelada" ? t("Cancelada") : s === "recebida" && c.recebida_em ? `${t("Recebida")} ${dataBR(c.recebida_em)}` : `${s === "atrasada" ? t("Venceu") : t("Vence")} ${dataBR(c.vencimento)}`}
                 </div>
-                <div className="w-28 text-right text-sm font-semibold tabular-nums">{formatCents(c.valor_cents, "BRL")}</div>
+                <div className={`w-28 text-right text-sm font-semibold tabular-nums ${s === "cancelada" ? "text-text-muted line-through" : ""}`}>{formatCents(c.valor_cents, "BRL")}</div>
                 {podeGerenciar && c.situacao === "a_receber" ? (
                   <>
                     <Button size="sm" variant="ghost" onClick={() => setCancelando(c)}>{t("Cancelar")}</Button>

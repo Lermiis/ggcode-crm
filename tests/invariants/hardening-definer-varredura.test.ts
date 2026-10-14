@@ -102,6 +102,15 @@ const AUTHENTICATED_PERMITIDO: readonly Excecao[] = [
       "fn_role_at_least(p_org, 'manager'), mesmo papel da RLS de honorarios_parcelas.",
   },
   {
+    fn: "fn_contratos_cobranca_receber(uuid,uuid,uuid,date)",
+    razao:
+      "POST app/api/v1/contratos/cobrancas/[id]/receber/route.ts (GG Code, módulo Contratos) usa " +
+      "createClient da sessão. Definer porque insere em financial_entries (fora da policy de " +
+      "escrita de contrato_cobrancas) e marca a cobrança recebida sob FOR UPDATE na mesma " +
+      "transação — mesmo desenho de fn_honorarios_parcela_pagar. Começa por auth.uid() is null " +
+      "e exige fn_role_at_least(p_org, 'manager')."
+  },
+  {
     fn: "fn_finalizar_comanda(uuid,uuid,uuid,integer)",
     razao:
       "POST app/api/v1/financeiro/comandas/[id]/finalizar/route.ts e " +

@@ -55,7 +55,7 @@ beforeAll(() => {
       select '${LEAD}', '${GOV_ORG}', 'Lead contrato', p.id, s.id from public.crm_pipelines p join public.crm_stages s on s.pipeline_id = p.id
        where p.organization_id = '${GOV_ORG}' limit 1 on conflict (id) do nothing;
     insert into public.contratos (id, organization_id, lead_id, titulo, inicio) values ('${CONTRATO}', '${GOV_ORG}', '${LEAD}', 'Teste', '2026-10-01') on conflict (id) do nothing;
-    insert into public.contrato_formas (id, organization_id, contrato_id, tipo, valor_cents) values ('${FORMA}', '${GOV_ORG}', '${CONTRATO}', 'avulso', 10000) on conflict (id) do nothing;
+    insert into public.contrato_formas (id, organization_id, contrato_id, tipo, valor_cents, primeiro_vencimento) values ('${FORMA}', '${GOV_ORG}', '${CONTRATO}', 'avulso', 10000, '2026-10-10') on conflict (id) do nothing;
     insert into public.contrato_cobrancas (id, organization_id, contrato_id, forma_id, competencia, descricao, vencimento, valor_cents, situacao) values
       ('${COB_SEQ}', '${GOV_ORG}', '${CONTRATO}', '${FORMA}', 'a1', 'Seq', '2026-10-10', 10000, 'a_receber'),
       ('${COB_CORRIDA}', '${GOV_ORG}', '${CONTRATO}', '${FORMA}', 'a2', 'Corrida', '2026-10-10', 10000, 'a_receber'),

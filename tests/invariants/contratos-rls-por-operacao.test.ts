@@ -29,8 +29,8 @@ beforeAll(() => {
       ('${CONTRATO}', '${GOV_ORG}', '${LEAD}', 'A', '2026-10-01'),
       ('${CONTRATO_COM_RECEBIDA}', '${GOV_ORG}', '${LEAD}', 'B', '2026-10-01'),
       ('${CONTRATO_OUTRA_ORG}', '${ORG_B}', null, 'C', '2026-10-01') on conflict (id) do nothing;
-    insert into public.contrato_formas (id, organization_id, contrato_id, tipo, valor_cents) values
-      ('${FORMA}', '${GOV_ORG}', '${CONTRATO}', 'avulso', 100), ('${FORMA_REC}', '${GOV_ORG}', '${CONTRATO_COM_RECEBIDA}', 'avulso', 100) on conflict (id) do nothing;
+    insert into public.contrato_formas (id, organization_id, contrato_id, tipo, valor_cents, primeiro_vencimento) values
+      ('${FORMA}', '${GOV_ORG}', '${CONTRATO}', 'avulso', 100, '2026-10-10'), ('${FORMA_REC}', '${GOV_ORG}', '${CONTRATO_COM_RECEBIDA}', 'avulso', 100, '2026-10-10') on conflict (id) do nothing;
     insert into public.contrato_cobrancas (id, organization_id, contrato_id, forma_id, competencia, descricao, vencimento, valor_cents, situacao, recebida_em) values
       ('${PENDENTE}', '${GOV_ORG}', '${CONTRATO}', '${FORMA}', 'x1', 'P', '2026-10-10', 100, 'a_receber', null),
       ('${RECEBIDA}', '${GOV_ORG}', '${CONTRATO_COM_RECEBIDA}', '${FORMA_REC}', 'x2', 'R', '2026-10-10', 100, 'recebida', '2026-10-10') on conflict (id) do nothing;
@@ -65,7 +65,7 @@ describe("manager", () => {
     expect(writeCountAs(GOV_MANAGER, `delete from public.contratos where id = '${CONTRATO_COM_RECEBIDA}'`)).toBe(0);
   });
   it("não pendura forma nem cobrança em contrato de outra organização", () => {
-    expect(writeCountAs(GOV_MANAGER, `insert into public.contrato_formas (organization_id, contrato_id, tipo, valor_cents) values ('${GOV_ORG}', '${CONTRATO_OUTRA_ORG}', 'avulso', 1)`)).toBe(0);
+    expect(writeCountAs(GOV_MANAGER, `insert into public.contrato_formas (organization_id, contrato_id, tipo, valor_cents, primeiro_vencimento) values ('${GOV_ORG}', '${CONTRATO_OUTRA_ORG}', 'avulso', 1, '2026-10-10')`)).toBe(0);
   });
   it("não lê contrato de outra organização", () => {
     expect(Number(lastLine(sql(`set role authenticated; select set_config('request.jwt.claims', '{"sub":"${GOV_MANAGER}"}', false);

@@ -107,34 +107,34 @@ export async function POST(req: NextRequest, ctx: Ctx): Promise<Response> {
   if (!forma || (forma.contratos as unknown as { situacao: string }).situacao !== "ativo") {
     return fail("validation_failed", "Implantação não encontrada em contrato ativo.", 422, { requestId });
   }
-  const { data: cobs, error: e1 } = await supabase.from("contrato_cobrancas").select("competencia, valor_cents, situacao")
+  const { data: cobs, error: e1 } = await supabase.from("contrato_cobrancas").select("id, competencia, valor_cents, situacao")
     .eq("forma_id", formaId).eq("organization_id", orgId);
   if (e1) return respostaDeErro(e1, requestId);
   const recebidas = (cobs ?? []).filter((x) => x.situacao === "recebida") as Array<{ competencia: string; valor_cents: number }>;
+  const idsAntigos = (cobs ?? []).filter((x) => x.situacao === "a_receber").map((x) => x.id as string);
 
   let novas;
   try {
     novas = refazerParcelamento({
       total_cents: forma.valor_cents, recebidas, novasParcelas: lido.data.parcelas, primeiroVencimento: lido.data.primeiro_vencimento,
-      ocupadas: (cobs ?? []).filter((x) => x.situacao !== "a_receber").map((x) => x.competencia),
+      ocupadas: (cobs ?? []).map((x) => x.competencia as string),
     });
   } catch (e) {
     return fail("validation_failed", (e as Error).message, 422, { requestId });
   }
 
-  // Competência é única por forma e as novas podem reaproveitar a numeração das a_receber:
-  // apaga as antigas (guardando o que saiu) e insere as novas; se a inserção falhar, devolve as antigas.
-  const { data: antigas, error: e2 } = await supabase.from("contrato_cobrancas").delete()
-    .eq("forma_id", formaId).eq("organization_id", orgId).eq("situacao", "a_receber").select("*");
-  if (e2) return respostaDeErro(e2, requestId);
+  // Ordem segura: insere as novas (chaves além da maior existente, sem colisão); se falhar, nada se perdeu.
+  // Só então apaga as antigas a_receber. Se o delete falhar, repetir é seguro.
   const { error: e3 } = await supabase.from("contrato_cobrancas")
     .insert(novas.map((n) => ({ ...n, organization_id: orgId, contrato_id: id, forma_id: formaId })));
-  if (e3) {
-    if (antigas?.length) {
-      const { error: eR } = await supabase.from("contrato_cobrancas").insert(antigas);
-      if (eR) logger.error("contratos.refazer_restauracao_falhou", { requestId, formaId, code: eR.code, message: eR.message });
+  if (e3) return respostaDeErro(e3, requestId);
+  if (idsAntigos.length) {
+    const { error: e2 } = await supabase.from("contrato_cobrancas").delete()
+      .in("id", idsAntigos).eq("organization_id", orgId).eq("situacao", "a_receber");
+    if (e2) {
+      logger.error("contratos.refazer_delete_falhou", { requestId, formaId, code: e2.code, message: e2.message });
+      return fail("internal_error", "Parcelas novas criadas; não consegui remover as antigas — tente de novo.", 500, { requestId });
     }
-    return respostaDeErro(e3, requestId);
   }
   const { error: e4 } = await supabase.from("contrato_formas").update({ parcelas: recebidas.length + novas.length }).eq("id", formaId).eq("organization_id", orgId);
   if (e4) return respostaDeErro(e4, requestId);

@@ -46,13 +46,16 @@ export async function PATCH(req: NextRequest, ctx: Ctx): Promise<Response> {
   const corpo = lido.data;
 
   if (corpo.acao === "editar") {
+    const { data: ativo, error: eA } = await supabase.from("contratos").select("id").eq("id", id).eq("organization_id", orgId).eq("situacao", "ativo").maybeSingle();
+    if (eA) return respostaDeErro(eA, requestId);
+    if (!ativo) return fail("not_found", "Contrato ativo não encontrado.", 404, { requestId });
     const { data: recebida, error: e0 } = await supabase.from("contrato_cobrancas").select("id")
       .eq("contrato_id", id).eq("organization_id", orgId).eq("situacao", "recebida").lt("vencimento", corpo.inicio).limit(1);
     if (e0) return respostaDeErro(e0, requestId);
     if (recebida?.length) return fail("validation_failed", "Já há recebimento antes dessa data.", 422, { requestId });
     const { data, error } = await supabase.from("contratos")
       .update({ titulo: corpo.titulo, inicio: corpo.inicio, fim: corpo.fim ?? null, updated_at: new Date().toISOString() })
-      .eq("id", id).eq("organization_id", orgId).select("id, titulo, inicio, fim").maybeSingle();
+      .eq("id", id).eq("organization_id", orgId).eq("situacao", "ativo").select("id, titulo, inicio, fim").maybeSingle();
     if (error) return respostaDeErro(error, requestId);
     if (!data) return fail("not_found", "Contrato não encontrado.", 404, { requestId });
     await audit({ action: "contratos.contrato_editado", resourceType: "contrato", resourceId: id, requestId });

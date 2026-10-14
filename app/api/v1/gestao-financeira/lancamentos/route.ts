@@ -62,7 +62,8 @@ export async function POST(req: NextRequest): Promise<Response> {
       p_total_cents: p.total_cents, p_parcelas: p.parcelas, p_primeiro: p.primeiro, p_description: p.description,
     });
     if (error) return respostaDeErro(error, requestId);
-    await audit({ action: "financeiro.lancamento_criado", resourceType: "gf_parcelamento", resourceId: data as string, requestId, metadata: { direction: p.direction, parcelas: p.parcelas } });
+    const parcelamentoId = data as string;
+    await audit({ action: "financeiro.lancamento_criado", resourceType: "gf_parcelamento", resourceId: parcelamentoId, requestId, metadata: { direction: p.direction, parcelas: p.parcelas } });
     return ok({ id: data }, { requestId, status: 201 });
   }
 
@@ -74,6 +75,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     p_amount_cents: l.amount_cents, p_entry_date: l.entry_date, p_description: l.description, p_pago: l.pago ?? false, p_paid_date: l.paid_date ?? null,
   });
   if (error) return respostaDeErro(error, requestId);
-  await audit({ action: "financeiro.lancamento_criado", resourceType: "financial_entry", resourceId: data as string, requestId, metadata: { direction: l.direction, pago: l.pago ?? false } });
+  const lancamentoId = data as string;
+  await audit({ action: "financeiro.lancamento_criado", resourceType: "financial_entry", resourceId: lancamentoId, requestId, metadata: { direction: l.direction, pago: l.pago ?? false } });
   return ok({ id: data }, { requestId, status: 201 });
 }

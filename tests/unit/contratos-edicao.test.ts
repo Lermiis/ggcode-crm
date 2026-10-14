@@ -24,6 +24,15 @@ describe("refazerParcelamento com ocupadas", () => {
   it("numera depois de parcela cancelada", () => {
     const r = refazerParcelamento({ total_cents: 1000, recebidas: [], novasParcelas: 1, primeiroVencimento: "2026-11-10", ocupadas: ["parcela-1", "parcela-2"] });
     expect(r[0]!.competencia).toBe("parcela-3");
+    expect(r[0]!.descricao).toBe("Implantação 1/1");
+  });
+  it("com a_receber existentes: chaves depois da maior, rótulo por posição", () => {
+    const r = refazerParcelamento({
+      total_cents: 90000, recebidas: [{ competencia: "parcela-1", valor_cents: 30000 }], novasParcelas: 2, primeiroVencimento: "2026-11-10",
+      ocupadas: ["parcela-1", "parcela-2", "parcela-3"],
+    });
+    expect(r.map((c) => c.competencia)).toEqual(["parcela-4", "parcela-5"]);
+    expect(r.map((c) => c.descricao)).toEqual(["Implantação 2/3", "Implantação 3/3"]);
   });
 });
 

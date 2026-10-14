@@ -806,6 +806,18 @@ export const NAV_CATALOG = [
     modulo: "honorarios",
   },
   {
+    // GG Code — módulo Contratos (migration 9001). Uso diário de quem administra: sobe ao sidebar.
+    href: "/app/contratos",
+    label: "Contratos",
+    description: "Quem paga, quanto e quando. Cobranças do mês e recebimentos.",
+    icon: "FileText",
+    group: "analise",
+    section: "Dinheiro",
+    minRole: "viewer",
+    sidebar: true,
+    modulo: "contratos",
+  },
+  {
     href: "/app/metrics",
     label: "Desempenho",
     description: "Funil e performance por atendente nos últimos 30 dias.",

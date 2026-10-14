@@ -817,6 +817,17 @@ export const NAV_CATALOG = [
     modulo: "contratos",
   },
   {
+    // GG Code — módulo Financeiro (slug gestao_financeira; `financeiro` já é o das Comandas). Hub Análise › Dinheiro, sem sidebar.
+    href: "/app/financeiro",
+    label: "Financeiro",
+    description: "Quanto entrou, quanto saiu e quanto sobrou.",
+    icon: "Receipt",
+    group: "analise",
+    section: "Dinheiro",
+    minRole: "viewer",
+    modulo: "gestao_financeira",
+  },
+  {
     href: "/app/metrics",
     label: "Desempenho",
     description: "Funil e performance por atendente nos últimos 30 dias.",

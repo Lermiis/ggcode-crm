@@ -1,12 +1,13 @@
+import { moduloAusente } from "@/lib/contratos/modulo";
 import { fail } from "@/lib/api/wrappers";
 import { logger } from "@/lib/logger";
 
 export const MENSAGEM_MODULO =
   "O módulo Contratos não está instalado. Peça ao administrador para instalar em Configurações da instalação › Módulos.";
 
-/** 42P01 = tabela inexistente = módulo não instalado (ADR-0002). */
+/** moduloAusente: tabela inexistente = módulo não instalado (ADR-0002). */
 export function respostaDeErro(error: { code?: string; message?: string }, requestId: string): Response {
-  if (error.code === "42P01") return fail("module_not_installed", MENSAGEM_MODULO, 409, { requestId });
+  if (moduloAusente(error)) return fail("module_not_installed", MENSAGEM_MODULO, 409, { requestId });
   if (error.code === "23503") return fail("validation_failed", "Referência inválida para esta organização.", 422, { requestId });
   if (error.code === "23505") return fail("conflict", "Esta cobrança já existe.", 409, { requestId });
   if (error.code === "22008" || error.code === "22007") return fail("validation_failed", "Data inválida.", 422, { requestId });

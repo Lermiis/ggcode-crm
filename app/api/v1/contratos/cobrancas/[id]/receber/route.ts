@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type { NextRequest } from "next/server";
 
+import { moduloAusente } from "@/lib/contratos/modulo";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest, ctx: Ctx): Promise<Response> {
     p_org: authz.org.orgId, p_cobranca: id, p_account_id: lido.data.account_id, p_recebida_em: lido.data.recebida_em ?? null,
   });
   if (error) {
-    if (error.code === "42P01") return fail("module_not_installed", MENSAGEM_MODULO, 409, { requestId });
+    if (moduloAusente(error)) return fail("module_not_installed", MENSAGEM_MODULO, 409, { requestId });
     if (error.code === "22008" || error.code === "22007") return fail("validation_failed", "Data inválida.", 422, { requestId });
     const chave = Object.keys(RECUSAS).find((k) => error.message?.includes(k));
     if (chave) { const [code, msg, st] = RECUSAS[chave]!; return fail(code, msg, st, { requestId }); }

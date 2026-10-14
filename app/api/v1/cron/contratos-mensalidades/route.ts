@@ -8,6 +8,7 @@ import { randomUUID } from "node:crypto";
 
 import type { NextRequest } from "next/server";
 
+import { moduloAusente } from "@/lib/contratos/modulo";
 import { ok, fail } from "@/lib/api/wrappers";
 import { autorizaCron } from "@/lib/auth/cron-auth";
 import { hojeNoFuso, mensalidadesDevidas } from "@/lib/contratos/regras";
@@ -26,7 +27,7 @@ async function handle(req: NextRequest): Promise<Response> {
     .select("id, organization_id, contrato_id, valor_cents, dia_vencimento, contratos!inner(inicio, fim, situacao)")
     .eq("tipo", "mensalidade").eq("ativa", true).eq("contratos.situacao", "ativo");
   if (error) {
-    if (error.code === "42P01") return ok({ geradas: 0, modulo: "nao_instalado" }, { requestId });
+    if (moduloAusente(error)) return ok({ geradas: 0, modulo: "nao_instalado" }, { requestId });
     logger.error("contratos-mensalidades: leitura falhou", { requestId, error: error.message });
     return fail("internal_error", error.message, 500, { requestId });
   }

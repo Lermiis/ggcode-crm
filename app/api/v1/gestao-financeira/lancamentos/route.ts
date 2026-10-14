@@ -27,10 +27,12 @@ export async function GET(req: NextRequest): Promise<Response> {
   const categoria = q.get("account_plan_id");
   return protegido(requestId, async () => {
     const { lancamentos, detalhes } = await carregarLancamentos(g.supabase, g.orgId);
-    const lista = lancamentos
+    const filtrada = lancamentos
       .filter((l) => (!mes || l.entry_date.startsWith(mes)) && (!direction || l.direction === direction) && (!status || l.status === status))
       .filter((l) => (!conta || detalhes.get(l.id)?.conta.id === conta) && (!categoria || detalhes.get(l.id)?.categoria?.id === categoria))
-      .sort((a, b) => b.entry_date.localeCompare(a.entry_date) || a.id.localeCompare(b.id))
+      .sort((a, b) => b.entry_date.localeCompare(a.entry_date) || a.id.localeCompare(b.id));
+    const truncado = filtrada.length > LIMITE;
+    const lista = filtrada
       .slice(0, LIMITE)
       .map((l) => {
         const d = detalhes.get(l.id)!;
@@ -40,7 +42,7 @@ export async function GET(req: NextRequest): Promise<Response> {
           recorrente: d.recorrente, cobranca_contrato: l.cobranca_contrato,
         };
       });
-    return ok(lista, { requestId });
+    return ok(lista, { requestId, ...(truncado ? { meta: { truncado: true, has_more: true } } : {}) });
   });
 }
 

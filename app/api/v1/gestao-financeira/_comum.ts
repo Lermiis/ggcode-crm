@@ -29,7 +29,7 @@ const RECUSAS: Record<string, [string, string, number]> = {
 };
 
 export function respostaDeErro(error: { code?: string; message?: string }, requestId: string): Response {
-  if (moduloAusente(error)) return fail("module_not_installed", MENSAGEM_MODULO_GF, 409, { requestId });
+  if (moduloAusente(error) || error.code === "PGRST202" || error.code === "42883") return fail("module_not_installed", MENSAGEM_MODULO_GF, 409, { requestId });
   const chave = Object.keys(RECUSAS).find((k) => error.message?.includes(k));
   if (chave) {
     const [code, msg, st] = RECUSAS[chave]!;
@@ -39,7 +39,7 @@ export function respostaDeErro(error: { code?: string; message?: string }, reque
   if (error.code === "22023") return fail("validation_failed", "Dados inválidos.", 422, { requestId });
   if (error.code === "23503") return fail("validation_failed", "Referência inválida para esta organização.", 422, { requestId });
   if (error.code === "23505") return fail("conflict", "Registro duplicado.", 409, { requestId });
-  if (error.code === "gf_volume") return fail("validation_failed", "Volume de lançamentos acima do suportado nesta tela.", 422, { requestId });
+  if (error.code === "gf_volume") return fail("internal_error", "Volume de lançamentos acima do suportado nesta versão.", 500, { requestId });
   logger.error("gestao_financeira.erro_inesperado", { requestId, code: error.code, message: error.message });
   return fail("internal_error", "Erro ao processar a solicitação.", 500, { requestId });
 }
@@ -57,9 +57,13 @@ export async function entrar(nivel: "ver" | "editar", resource: string, requestI
   const authz = await requireRole("viewer", { requestId, resource });
   if (!authz.ok) return { ok: false, response: authz.response };
   const supabase = (await createClient()) as unknown as SupabaseClient;
-  if (!(await exigirAcesso(supabase, authz.org.orgId, nivel))) {
-    return { ok: false, response: fail("forbidden", "Sem acesso ao Financeiro.", 403, { requestId }) };
+  let pode: boolean;
+  try {
+    pode = await exigirAcesso(supabase, authz.org.orgId, nivel);
+  } catch (e) {
+    return { ok: false, response: respostaDeErro(e as { code?: string; message?: string }, requestId) };
   }
+  if (!pode) return { ok: false, response: fail("forbidden", "Sem acesso ao Financeiro.", 403, { requestId }) };
   return { ok: true, supabase, orgId: authz.org.orgId, userId: authz.user.id };
 }
 

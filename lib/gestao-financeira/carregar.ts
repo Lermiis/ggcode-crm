@@ -91,10 +91,10 @@ const tudo = <T>(db: Db, tabela: string, cols: string, orgId: string, opcional =
   paginar<T>((a, b) => db.from(tabela).select(cols).eq("organization_id", orgId).order(ordem).range(a, b) as unknown as Res<T>, opcional);
 
 export async function carregarCategorias(db: Db, orgId: string): Promise<Contexto["categorias"]> {
-  const planos = await tudo<{ id: string; name: string }>(db, "account_plans", "id, name", orgId);
+  const planos = await tudo<{ id: string; name: string; direction: "in" | "out" }>(db, "account_plans", "id, name, direction", orgId);
   const gfs = await tudo<{ account_plan_id: string; grupo: Grupo; conta_cac: boolean }>(db, "gf_categorias", "account_plan_id, grupo, conta_cac", orgId, false, "account_plan_id");
   const porPlano = new Map(gfs.map((g) => [g.account_plan_id, g]));
-  return new Map(planos.map((p) => [p.id, { nome: p.name, grupo: porPlano.get(p.id)?.grupo ?? "outras_despesas", conta_cac: porPlano.get(p.id)?.conta_cac ?? false }]));
+  return new Map(planos.map((p) => [p.id, { nome: p.name, grupo: porPlano.get(p.id)?.grupo ?? grupoPadrao(p.direction), conta_cac: porPlano.get(p.id)?.conta_cac ?? false }]));
 }
 
 export async function carregarContas(db: Db, orgId: string) {
@@ -125,7 +125,7 @@ export async function carregarRecorrencias(db: Db, orgId: string): Promise<Array
 }
 
 /** Todos os lançamentos da org (ver nota de saldo no topo) já no formato do cálculo. */
-export async function carregarLancamentos(db: Db, orgId: string): Promise<{ lancamentos: Lancamento[]; detalhes: Map<string, Detalhe> }> {
+export async function carregarLancamentos(db: Db, orgId: string): Promise<{ lancamentos: Lancamento[]; detalhes: Map<string, Detalhe>; cobrancas: Awaited<ReturnType<typeof carregarCobrancas>>; contas: Awaited<ReturnType<typeof carregarContas>> }> {
   const [categorias, contasRows, cobrancas, parcRows, parcelamentos, linhas] = await Promise.all([
     carregarCategorias(db, orgId),
     carregarContas(db, orgId),
@@ -149,7 +149,7 @@ export async function carregarLancamentos(db: Db, orgId: string): Promise<{ lanc
     lancamentos.push(m.lancamento);
     detalhes.set(l.id, m.detalhe);
   }
-  return { lancamentos, detalhes };
+  return { lancamentos, detalhes, cobrancas, contas: contasRows };
 }
 
 /** Saldo por conta = saldo inicial + pagos (entrada soma, saída subtrai); estorno já é lançamento oposto. */

@@ -51589,11 +51589,14 @@ begin
   if auth.uid() is null or not public.fn_gf_pode(p_org, 'editar') then
     raise exception 'gf_forbidden' using errcode = '42501';
   end if;
-  select id, direction, status into v from public.financial_entries
+  select id, direction, status, origin into v from public.financial_entries
    where id = p_entry and organization_id = p_org
    for update;
   if not found then
     raise exception 'lancamento_nao_encontrado' using errcode = 'P0002';
+  end if;
+  if v.origin = 'sale' then
+    raise exception 'lancamento_de_comanda' using errcode = '42501';
   end if;
   if v.status <> 'pending' then
     raise exception 'lancamento_pago_imutavel' using errcode = '42501';
@@ -51625,11 +51628,15 @@ begin
   if auth.uid() is null or not public.fn_gf_pode(p_org, 'editar') then
     raise exception 'gf_forbidden' using errcode = '42501';
   end if;
-  select id, status into v from public.financial_entries
+  select id, status, origin into v from public.financial_entries
    where id = p_entry and organization_id = p_org
    for update;
   if not found then
     raise exception 'lancamento_nao_encontrado' using errcode = 'P0002';
+  end if;
+  -- Lançamento de comanda é das Comandas (fn_estornar_comanda), não do Financeiro.
+  if v.origin = 'sale' then
+    raise exception 'lancamento_de_comanda' using errcode = '42501';
   end if;
   if v.status <> 'pending' then
     raise exception 'lancamento_ja_pago' using errcode = '22023';
@@ -51702,6 +51709,12 @@ begin
   if to_regclass('public.gf_parcelas') is not null then
     execute 'update public.gf_parcelas set entry_id = $1 where entry_id = $2' using v_novo, p_entry;
   end if;
+  -- Recebimento de cobrança de contrato: a cobrança passa a apontar para o lançamento novo
+  -- (o original fica estornado). Sem o módulo Contratos, nada a mover.
+  if to_regclass('public.contrato_cobrancas') is not null then
+    execute 'update public.contrato_cobrancas set financial_entry_id = $1, updated_at = now()
+              where financial_entry_id = $2 and organization_id = $3' using v_novo, p_entry, p_org;
+  end if;
   return v_novo;
 end;
 $$;
@@ -51722,11 +51735,15 @@ begin
   if auth.uid() is null or not public.fn_gf_pode(p_org, 'editar') then
     raise exception 'gf_forbidden' using errcode = '42501';
   end if;
-  select id, status into v from public.financial_entries
+  select id, status, origin into v from public.financial_entries
    where id = p_entry and organization_id = p_org
    for update;
   if not found then
     raise exception 'lancamento_nao_encontrado' using errcode = 'P0002';
+  end if;
+  -- Lançamento de comanda é das Comandas (fn_estornar_comanda), não do Financeiro.
+  if v.origin = 'sale' then
+    raise exception 'lancamento_de_comanda' using errcode = '42501';
   end if;
   if v.status <> 'pending' then
     raise exception 'lancamento_pago_imutavel' using errcode = '42501';
@@ -51812,6 +51829,47 @@ $$;
 
 revoke execute on function public.fn_gf_recorrencia_encerrar(uuid, uuid) from public, anon;
 grant execute on function public.fn_gf_recorrencia_encerrar(uuid, uuid) to authenticated;
+
+-- O gerador do núcleo (cron recurring-entries) não conhece gf_recorrencias.fim. Esta roda antes
+-- dele (cron gf-recorrencias, 05:45): molde cujo fim já passou é desativado, e o lançamento
+-- recorrente PENDENTE gerado depois do fim é apagado. Pago nunca é tocado. Só service_role.
+create or replace function public.fn_gf_encerrar_recorrencias_vencidas()
+returns integer
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_n integer;
+begin
+  if to_regclass('public.gf_recorrencias') is null then
+    return 0;
+  end if;
+  execute $q$
+    with vencidas as (
+      select recurring_entry_id, organization_id, fim from public.gf_recorrencias
+       where fim is not null and fim < $1
+    ),
+    apagadas as (
+      delete from public.financial_entries e using vencidas v
+       where e.recurring_entry_id = v.recurring_entry_id and e.organization_id = v.organization_id
+         and e.origin = 'recurring' and e.status = 'pending' and e.entry_date > v.fim
+      returning 1
+    ),
+    desligadas as (
+      update public.recurring_entries r set is_active = false, updated_at = now()
+        from vencidas v
+       where r.id = v.recurring_entry_id and r.organization_id = v.organization_id and r.is_active
+      returning 1
+    )
+    select count(*)::integer from desligadas
+  $q$ into v_n using (now() at time zone 'America/Sao_Paulo')::date;
+  return v_n;
+end;
+$$;
+
+revoke execute on function public.fn_gf_encerrar_recorrencias_vencidas() from public, anon, authenticated;
+grant execute on function public.fn_gf_encerrar_recorrencias_vencidas() to service_role;
 
 -- Receita é entrada; todo outro grupo é saída. A direção de uma categoria existente não muda
 -- (os lançamentos já classificados por ela mudariam de lado na DRE).

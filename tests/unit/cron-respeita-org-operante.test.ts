@@ -62,6 +62,7 @@ const SEM_FILTRO: Record<string, string> = {
   "contratos-mensalidades": "só gera cobrança a receber do contrato; escrita interna, sem custo nem saída",
   "data-retention": "retenção e expurgo: obrigação, nunca bloqueada (spec §1.3)",
   "followup-sem-agente": "só abre aviso na Central sobre fluxo sem agente; sem custo nem saída",
+  "gf-recorrencias": "só desliga molde vencido e apaga lançamento recorrente pendente após o fim; escrita interna, sem custo nem saída",
   "handoff-devolucao": "devolve a conversa à IA; a IA só fala por evento, barrado pelo gate e pelo dispatcher",
   "lead-date-field-due": "só emite lead.date_field_due; o consumidor (automationRulesHandler) é 'pula'",
   "lead-time-triggers": "só emite lead.silent_for/stage_stale; o consumidor (automationRulesHandler) é 'pula'",

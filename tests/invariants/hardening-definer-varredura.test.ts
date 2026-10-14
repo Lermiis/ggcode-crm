@@ -520,6 +520,8 @@ describe("varredura: SECURITY DEFINER de public não fica exposta", () => {
       "public.fn_mark_conversation_message(uuid, text, text, timestamptz)",
       "public.fn_publish_ai_agent_version(uuid, uuid, uuid)",
       "public.activate_kb_version(uuid, uuid)",
+      // GG Code 9002: só o cron gf-recorrencias (client admin) chama; fechada para authenticated.
+      "public.fn_gf_encerrar_recorrencias_vencidas()",
     ];
     const semExecute = escrita.filter(
       (assinatura) =>

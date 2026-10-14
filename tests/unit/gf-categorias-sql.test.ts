@@ -20,3 +20,18 @@ describe("categorias padrão: SQL = TS", () => {
     expect(linhas).toEqual(CATEGORIAS_PADRAO.map(({ nome, direction, grupo, conta_cac }) => ({ nome, direction, grupo, conta_cac })));
   });
 });
+
+/** fn_gf_pode roda nas policies dos Contratos ANTES de o Financeiro existir: sem gf_acessos, só admin. */
+describe("fn_gf_pode sem a tabela gf_acessos", () => {
+  const ini = sqlTexto.indexOf("create or replace function public.fn_gf_pode(");
+  const fn = sqlTexto.slice(ini, sqlTexto.indexOf("$$;", ini));
+  it("admin passa antes de qualquer consulta; sem gf_acessos devolve false; a consulta é dinâmica", () => {
+    expect(ini).toBeGreaterThan(-1);
+    const admin = fn.indexOf("if public.fn_role_at_least(p_org, 'admin') then\n    return true;");
+    const guarda = fn.search(/to_regclass\('public\.gf_acessos'\) is null[\s\S]*?then\s+return false;/);
+    expect(admin).toBeGreaterThan(-1);
+    expect(guarda).toBeGreaterThan(admin);
+    expect(fn.indexOf("execute 'select nivel from public.gf_acessos")).toBeGreaterThan(guarda);
+    expect(fn).not.toMatch(/^\s*select[^']*from public\.gf_acessos/m); // nenhuma consulta estática
+  });
+});

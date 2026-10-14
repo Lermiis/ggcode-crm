@@ -58,6 +58,7 @@ O "Recebido" dos Contratos já cria `financial_entries` (in, paid). As comandas 
   - escrita exige `fn_gf_pode(org,'editar')`;
   - `gf_acessos` é lido e escrito só por admin.
 - **Contratos** (migration 9002 altera as policies da 9001): leitura passa a exigir `fn_gf_pode(org,'ver')` e escrita `fn_gf_pode(org,'editar')`. A RPC de recebimento passa a checar `fn_gf_pode(org,'editar')`.
+- **Membro revogado:** a linha dele em `gf_acessos` fica inerte (`fn_gf_pode` exige vínculo ativo com a org) e volta a valer se ele for convidado de novo.
 - **Comportamento padrão:** sem nenhuma linha em `gf_acessos`, só administradores acessam. A GG Code fica exatamente assim: Guilherme e Gabriel como admins.
 - **Limite declarado:** as tabelas do **núcleo** (`financial_*`, `account_plans`, `recurring_entries`) mantêm a RLS do Deskcomm, porque as Comandas dependem dela para atendentes. As **telas e rotas** do Financeiro aplicam `fn_gf_pode`. Fechar o acesso direto via API ao núcleo fica na fase 2.
 

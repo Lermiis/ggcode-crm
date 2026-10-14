@@ -141,3 +141,20 @@ describe("metricas (Review Focus 4)", () => {
     expect(m.ltv.valor).toBe(60000); // 10000 × 6 meses de duração média (jan→jul)
   });
 });
+
+describe("guardas de divisão", () => {
+  it("CAC arredondado a 0 → ltvCac e payback null, nunca Infinity", () => {
+    const contratos = Array.from({ length: 5 }, (_, n) => ({ id: `n${n}`, inicio: "2026-10-01", fim: null, situacao: "ativo" as const, criado_em: "2026-10-02", encerrado_em: null, mensal_cents: 10000 }));
+    const m = metricas({ de: "2026-10", ate: "2026-10", ganhosSemContrato: 0, contratos,
+      lancamentos: [L({ direction: "out", grupo: "marketing", conta_cac: true, amount_cents: 1 })] });
+    expect(m.cac.valor).toBe(0);
+    expect(m.ltvCac.valor).toBeNull();
+    expect(m.payback.valor).toBeNull();
+  });
+  it("fluxo: pendente cobranca_contrato do mês corrente não duplica a cobrança", () => {
+    const f = fluxoProjetado({ hoje: "2026-10-14", mesesFuturos: 0, saldoAtual: 0, recorrencias: [], contratos: [],
+      lancamentos: [L({ amount_cents: 500, entry_date: "2026-10-20", cobranca_contrato: true })],
+      cobrancas: [{ vencimento: "2026-10-20", valor_cents: 500, situacao: "a_receber", recebida_em: null, contrato_id: "k" }] });
+    expect(f[0]!.entradas).toBe(500);
+  });
+});

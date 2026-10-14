@@ -64,7 +64,7 @@ export function fluxoProjetado(i: {
   const out: Array<{ mes: string; entradas: number; saidas: number; saldo: number; projetado: boolean }> = [];
   for (let k = 0; k <= i.mesesFuturos; k++) {
     const mes = addMes(atual, k);
-    const pend = ls.filter((l) => l.status === "pending");
+    const pend = ls.filter((l) => l.status === "pending" && !l.cobranca_contrato);
     let entradas = 0;
     let saidas = 0;
     if (k === 0) {
@@ -169,8 +169,8 @@ export function metricas(i: { de: string; ate: string; lancamentos: Lancamento[]
   else if (duracoes.length > 0 && soma(duracoes, (d) => d) > 0) ltv = ok(Math.round(arpa * (soma(duracoes, (d) => d) / duracoes.length)));
   else ltv = nulo("Sem churn nem contratos encerrados para estimar a permanência.");
 
-  const ltvCac = ltv.valor === null ? nulo(ltv.motivo ?? "Sem LTV.") : cac.valor === null ? nulo(cac.motivo ?? "Sem CAC.") : ok(r2(ltv.valor / cac.valor));
-  const payback = cac.valor === null ? nulo(cac.motivo ?? "Sem CAC.") : !arpa ? nulo("Sem receita média por cliente.") : ok(r1(cac.valor / arpa));
+  const ltvCac = ltv.valor === null ? nulo(ltv.motivo ?? "Sem LTV.") : cac.valor === null || cac.valor <= 0 ? nulo(cac.motivo ?? "CAC indisponível.") : ok(r2(ltv.valor / cac.valor));
+  const payback = cac.valor === null || cac.valor <= 0 ? nulo(cac.motivo ?? "CAC indisponível.") : !arpa ? nulo("Sem receita média por cliente.") : ok(r1(cac.valor / arpa));
 
   const doPeriodo = ls.filter((l) => noPeriodo(l.entry_date, de, ate));
   const receita = totalGrupo(doPeriodo, "receita");

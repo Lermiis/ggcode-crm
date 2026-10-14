@@ -806,7 +806,7 @@ export const NAV_CATALOG = [
     modulo: "honorarios",
   },
   {
-    // GG Code — módulo Contratos (migration 9001). Uso diário de quem administra: sobe ao sidebar.
+    // GG Code — módulo Contratos (migration 9001). Fica no hub Análise › Dinheiro e no ⌘K; sem sidebar: true para manter o menu em 15 itens.
     href: "/app/contratos",
     label: "Contratos",
     description: "Quem paga, quanto e quando. Cobranças do mês e recebimentos.",
@@ -814,7 +814,6 @@ export const NAV_CATALOG = [
     group: "analise",
     section: "Dinheiro",
     minRole: "viewer",
-    sidebar: true,
     modulo: "contratos",
   },
   {

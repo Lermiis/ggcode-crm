@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { showApiError } from "@/components/feedback/ApiErrorToast";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { useT } from "@/hooks/i18n/useT";
 import { apiClient } from "@/lib/api/client";
 import { hojeNoFuso, situacaoExibida } from "@/lib/contratos/regras";
@@ -20,6 +21,7 @@ export function ListaDeCobrancas({ filtro, onFiltro, cobrancas, carregando, pode
 }) {
   const t = useT();
   const [recebendo, setRecebendo] = useState<Cobranca | null>(null);
+  const [cancelando, setCancelando] = useState<Cobranca | null>(null);
   const hoje = hojeNoFuso();
   const FILTROS: Array<[Filtro, string]> = [["atrasadas", t("Atrasadas")], ["mes", t("Este mês")], ["proximas", t("Próximas")], ["recebidas", t("Recebidas")]];
   return (
@@ -48,7 +50,10 @@ export function ListaDeCobrancas({ filtro, onFiltro, cobrancas, carregando, pode
                 </div>
                 <div className="w-28 text-right text-sm font-semibold tabular-nums">{formatCents(c.valor_cents, "BRL")}</div>
                 {podeGerenciar && c.situacao === "a_receber" ? (
-                  <Button size="sm" onClick={() => setRecebendo(c)}>{t("Recebido")}</Button>
+                  <>
+                    <Button size="sm" variant="ghost" onClick={() => setCancelando(c)}>{t("Cancelar")}</Button>
+                    <Button size="sm" onClick={() => setRecebendo(c)}>{t("Recebido")}</Button>
+                  </>
                 ) : <span className="w-[84px]" />}
               </li>
             );
@@ -56,6 +61,7 @@ export function ListaDeCobrancas({ filtro, onFiltro, cobrancas, carregando, pode
         </ul>
       )}
       {recebendo ? <DialogReceber cobranca={recebendo} onFechar={() => setRecebendo(null)} /> : null}
+      {cancelando ? <DialogCancelar cobranca={cancelando} onFechar={() => setCancelando(null)} /> : null}
     </div>
   );
 }
@@ -72,8 +78,9 @@ function DialogReceber({ cobranca, onFechar }: { cobranca: Cobranca; onFechar: (
   });
   const inicial = (() => { try { return localStorage.getItem(CHAVE_CONTA) ?? ""; } catch { return ""; } })();
   const [conta, setConta] = useState(inicial);
+  const existe = (id: string) => !!contas.data?.some((c) => c.id === id);
   const [data, setData] = useState(hojeNoFuso());
-  const contaEscolhida = conta || contas.data?.[0]?.id || "";
+  const contaEscolhida = (existe(conta) ? conta : contas.data?.[0]?.id) ?? "";
 
   const receber = useMutation({
     mutationFn: () => apiClient.post(`/api/v1/contratos/cobrancas/${cobranca.id}/receber`, { account_id: contaEscolhida, recebida_em: data }),
@@ -91,7 +98,7 @@ function DialogReceber({ cobranca, onFechar }: { cobranca: Cobranca; onFechar: (
         <DialogHeader><DialogTitle>{t("Registrar recebimento")}</DialogTitle></DialogHeader>
         <p className="text-sm">{cobranca.cliente} · {cobranca.descricao} · <b>{formatCents(cobranca.valor_cents, "BRL")}</b></p>
         <label className="flex flex-col gap-1 text-sm">{t("Entrou na conta")}
-          <select className="rounded-md border border-border bg-transparent px-2 py-2" value={contaEscolhida} onChange={(e) => setConta(e.target.value)}>
+          <select className="rounded-md border border-border bg-bg px-2 py-2 text-sm text-text" value={contaEscolhida} onChange={(e) => setConta(e.target.value)}>
             {(contas.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </label>
@@ -99,11 +106,33 @@ function DialogReceber({ cobranca, onFechar }: { cobranca: Cobranca; onFechar: (
           <p className="text-sm text-danger">{t("Cadastre uma conta em Configurações › Financeiro.")}</p>
         ) : null}
         <label className="flex flex-col gap-1 text-sm">{t("Data")}
-          <input type="date" className="rounded-md border border-border bg-transparent px-2 py-2" value={data} onChange={(e) => setData(e.target.value)} />
+          <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
         </label>
         <DialogFooter>
           <Button variant="outline" onClick={onFechar}>{t("Cancelar")}</Button>
           <Button disabled={!contaEscolhida || receber.isPending} onClick={() => receber.mutate()}>{t("Confirmar")}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DialogCancelar({ cobranca, onFechar }: { cobranca: Cobranca; onFechar: () => void }) {
+  const t = useT();
+  const qc = useQueryClient();
+  const cancelar = useMutation({
+    mutationFn: () => apiClient.post(`/api/v1/contratos/cobrancas/${cobranca.id}/cancelar`, {}),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ["contratos"] }); onFechar(); },
+    onError: showApiError,
+  });
+  return (
+    <Dialog open onOpenChange={(o) => !o && onFechar()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>{t("Cancelar cobrança?")}</DialogTitle></DialogHeader>
+        <p className="text-sm">{cobranca.cliente} · {cobranca.descricao} · <b>{formatCents(cobranca.valor_cents, "BRL")}</b></p>
+        <DialogFooter>
+          <Button variant="outline" onClick={onFechar}>{t("Voltar")}</Button>
+          <Button disabled={cancelar.isPending} onClick={() => cancelar.mutate()}>{t("Cancelar cobrança")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

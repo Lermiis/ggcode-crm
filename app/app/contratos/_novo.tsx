@@ -5,15 +5,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { showApiError } from "@/components/feedback/ApiErrorToast";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { useT } from "@/hooks/i18n/useT";
 import { apiClient } from "@/lib/api/client";
+import { reaisParaCentavos } from "@/lib/contratos/dinheiro";
 import { hojeNoFuso } from "@/lib/contratos/regras";
 import type { TipoForma } from "@/lib/contratos/tipos";
 
 type Cliente = { id: string; title: string; contact_name: string | null };
 type FormaRascunho = { tipo: TipoForma; valor: string; parcelas: string; venc: string; dia: string; descricao: string };
 const vazia = (tipo: TipoForma): FormaRascunho => ({ tipo, valor: "", parcelas: "1", venc: hojeNoFuso(), dia: "10", descricao: "" });
-const centavos = (v: string) => Math.round(Number(v.replace(/\./g, "").replace(",", ".")) * 100);
 
 export function NovoContrato({ onFechar }: { onFechar: () => void }) {
   const t = useT();
@@ -33,7 +34,7 @@ export function NovoContrato({ onFechar }: { onFechar: () => void }) {
     mutationFn: () => apiClient.post("/api/v1/contratos", {
       lead_id: lead, titulo, inicio,
       formas: formas.map((f) => ({
-        tipo: f.tipo, valor_cents: centavos(f.valor),
+        tipo: f.tipo, valor_cents: reaisParaCentavos(f.valor) ?? 0,
         ...(f.tipo === "implantacao" ? { parcelas: Number(f.parcelas) || 1, primeiro_vencimento: f.venc } : {}),
         ...(f.tipo === "avulso" ? { primeiro_vencimento: f.venc, descricao: f.descricao } : {}),
         ...(f.tipo === "mensalidade" ? { dia_vencimento: Number(f.dia) } : {}),
@@ -43,8 +44,8 @@ export function NovoContrato({ onFechar }: { onFechar: () => void }) {
     onError: showApiError,
   });
 
-  const campo = "rounded-md border border-border bg-transparent px-2 py-2 text-sm";
-  const valido = lead && titulo.trim() && formas.length > 0 && formas.every((f) => centavos(f.valor) > 0);
+  const campo = "rounded-md border border-border bg-bg px-2 py-2 text-sm text-text";
+  const valido = lead && titulo.trim() && formas.length > 0 && formas.every((f) => reaisParaCentavos(f.valor) !== null);
   return (
     <Dialog open onOpenChange={(o) => !o && onFechar()}>
       <DialogContent className="max-w-xl">
@@ -61,29 +62,29 @@ export function NovoContrato({ onFechar }: { onFechar: () => void }) {
         </label>
         {clientes.data && clientes.data.length === 0 ? <p className="text-sm text-text-muted">{t("Nenhum negócio fechado. Marque o negócio como ganho no funil primeiro.")}</p> : null}
         <div className="grid grid-cols-[1fr_auto] gap-3">
-          <label className="flex flex-col gap-1 text-sm">{t("Nome do contrato")}<input className={campo} value={titulo} onChange={(e) => setTitulo(e.target.value)} /></label>
-          <label className="flex flex-col gap-1 text-sm">{t("Início")}<input type="date" className={campo} value={inicio} onChange={(e) => setInicio(e.target.value)} /></label>
+          <label className="flex flex-col gap-1 text-sm">{t("Nome do contrato")}<Input value={titulo} onChange={(e) => setTitulo(e.target.value)} /></label>
+          <label className="flex flex-col gap-1 text-sm">{t("Início")}<Input type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} /></label>
         </div>
 
         <div className="flex flex-col gap-2">
           {formas.map((f, i) => (
             <div key={i} className="grid grid-cols-2 gap-2 rounded-md border border-border p-3 sm:grid-cols-4">
-              <select className={campo} value={f.tipo} onChange={(e) => mudar(i, vazia(e.target.value as TipoForma))}>
+              <select aria-label={t("Tipo")} className={campo} value={f.tipo} onChange={(e) => mudar(i, vazia(e.target.value as TipoForma))}>
                 {TIPOS.map(([v, r]) => <option key={v} value={v}>{r}</option>)}
               </select>
-              <input className={campo} inputMode="decimal" placeholder={t("Valor R$")} value={f.valor} onChange={(e) => mudar(i, { valor: e.target.value })} />
+              <Input inputMode="decimal" placeholder={t("Valor R$")} aria-label={t("Valor R$")} value={f.valor} onChange={(e) => mudar(i, { valor: e.target.value })} />
               {f.tipo === "implantacao" ? (<>
-                <input className={campo} inputMode="numeric" placeholder={t("Parcelas")} value={f.parcelas} onChange={(e) => mudar(i, { parcelas: e.target.value })} />
-                <input type="date" className={campo} value={f.venc} onChange={(e) => mudar(i, { venc: e.target.value })} aria-label={t("1º vencimento")} />
+                <Input inputMode="numeric" placeholder={t("Parcelas")} aria-label={t("Parcelas")} value={f.parcelas} onChange={(e) => mudar(i, { parcelas: e.target.value })} />
+                <Input type="date" value={f.venc} onChange={(e) => mudar(i, { venc: e.target.value })} aria-label={t("1º vencimento")} />
               </>) : null}
               {f.tipo === "mensalidade" ? (
-                <input className={campo} inputMode="numeric" placeholder={t("Dia do vencimento")} value={f.dia} onChange={(e) => mudar(i, { dia: e.target.value })} />
+                <Input inputMode="numeric" placeholder={t("Dia do vencimento")} aria-label={t("Dia do vencimento")} value={f.dia} onChange={(e) => mudar(i, { dia: e.target.value })} />
               ) : null}
               {f.tipo === "avulso" ? (<>
-                <input type="date" className={campo} value={f.venc} onChange={(e) => mudar(i, { venc: e.target.value })} aria-label={t("Vencimento")} />
-                <input className={campo} placeholder={t("Descrição")} value={f.descricao} onChange={(e) => mudar(i, { descricao: e.target.value })} />
+                <Input type="date" value={f.venc} onChange={(e) => mudar(i, { venc: e.target.value })} aria-label={t("Vencimento")} />
+                <Input placeholder={t("Descrição")} aria-label={t("Descrição")} value={f.descricao} onChange={(e) => mudar(i, { descricao: e.target.value })} />
               </>) : null}
-              <Button variant="ghost" size="sm" className="col-span-full justify-self-end" onClick={() => setFormas((fs) => fs.filter((_, j) => j !== i))}>{t("Remover")}</Button>
+              <Button variant="ghost" size="sm" className="col-span-full justify-self-end" aria-label={`${t("Remover")} ${TIPOS.find(([v]) => v === f.tipo)?.[1] ?? ""}`} onClick={() => setFormas((fs) => fs.filter((_, j) => j !== i))}>{t("Remover")}</Button>
             </div>
           ))}
           <Button variant="outline" size="sm" onClick={() => setFormas((fs) => [...fs, vazia("mensalidade")])}>{t("+ Forma de cobrança")}</Button>

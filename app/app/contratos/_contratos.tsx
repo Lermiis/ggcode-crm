@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { showApiError } from "@/components/feedback/ApiErrorToast";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useT } from "@/hooks/i18n/useT";
 import { apiClient } from "@/lib/api/client";
 import type { Cobranca, Contrato, Forma } from "@/lib/contratos/tipos";
@@ -12,6 +12,16 @@ import { formatCents } from "@/lib/money";
 
 import { ListaDeCobrancas } from "./_cobrancas";
 import { LancarEvento } from "./_evento";
+
+function Erro({ onTentar }: { onTentar: () => void }) {
+  const t = useT();
+  return (
+    <div className="flex items-center gap-3 text-sm text-danger">
+      {t("Não foi possível carregar.")}
+      <Button size="sm" variant="outline" onClick={onTentar}>{t("Tentar de novo")}</Button>
+    </div>
+  );
+}
 
 const SIT: Record<Contrato["situacao"], string> = { ativo: "Ativo", encerrado: "Encerrado", cancelado: "Cancelado" };
 const dataBR = (d: string | null) => (d ? d.split("-").reverse().join("/") : "—");
@@ -23,6 +33,7 @@ export function ListaDeContratos({ podeGerenciar }: { podeGerenciar: boolean }) 
     queryKey: ["contratos", "lista"],
     queryFn: async () => (await apiClient.get<{ data: Contrato[] }>("/api/v1/contratos")).data,
   });
+  if (lista.isError) return <Erro onTentar={() => void lista.refetch()} />;
   if (lista.isLoading) return <p className="text-sm text-text-muted">{t("Carregando…")}</p>;
   if (!lista.data?.length) return <p className="text-sm text-text-muted">{t("Nenhum contrato ainda.")}</p>;
   return (
@@ -59,13 +70,14 @@ function Ficha({ id, podeGerenciar, onFechar }: { id: string; podeGerenciar: boo
   const t = useT();
   const qc = useQueryClient();
   const [evento, setEvento] = useState<Forma | null>(null);
+  const [confirmando, setConfirmando] = useState(false);
   const ficha = useQuery({
     queryKey: ["contratos", "ficha", id],
     queryFn: async () => (await apiClient.get<{ data: { contrato: Contrato & { contact_id: string | null }; formas: Forma[]; cobrancas: Cobranca[] } }>(`/api/v1/contratos/${id}`)).data,
   });
   const encerrar = useMutation({
-    mutationFn: () => apiClient.patch(`/api/v1/contratos/${id}`, { acao: "encerrar", cancelar_futuras: true }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["contratos"] }),
+    mutationFn: (acao: "encerrar" | "cancelar") => apiClient.patch(`/api/v1/contratos/${id}`, { acao, cancelar_futuras: true }),
+    onSuccess: () => { setConfirmando(false); void qc.invalidateQueries({ queryKey: ["contratos"] }); },
     onError: showApiError,
   });
   const d = ficha.data;
@@ -93,11 +105,24 @@ function Ficha({ id, podeGerenciar, onFechar }: { id: string; podeGerenciar: boo
             <ListaDeCobrancas filtro="mes" onFiltro={() => {}} carregando={false} cobrancas={d.cobrancas} podeGerenciar={podeGerenciar} semFiltros />
             {podeGerenciar && d.contrato.situacao === "ativo" ? (
               <div className="flex justify-end">
-                <Button variant="outline" disabled={encerrar.isPending} onClick={() => encerrar.mutate()}>{t("Encerrar contrato")}</Button>
+                <Button variant="outline" onClick={() => setConfirmando(true)}>{t("Encerrar contrato")}</Button>
               </div>
             ) : null}
           </div>
-        ) : <p className="text-sm text-text-muted">{t("Carregando…")}</p>}
+        ) : ficha.isError ? <Erro onTentar={() => void ficha.refetch()} /> : <p className="text-sm text-text-muted">{t("Carregando…")}</p>}
+        {confirmando ? (
+          <Dialog open onOpenChange={(o) => !o && setConfirmando(false)}>
+            <DialogContent>
+              <DialogHeader><DialogTitle>{t("Encerrar contrato?")}</DialogTitle></DialogHeader>
+              <p className="text-sm">{t("As cobranças futuras a receber serão canceladas.")}</p>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setConfirmando(false)}>{t("Voltar")}</Button>
+                <Button variant="outline" disabled={encerrar.isPending} onClick={() => encerrar.mutate("cancelar")}>{t("Cancelar contrato")}</Button>
+                <Button disabled={encerrar.isPending} onClick={() => encerrar.mutate("encerrar")}>{t("Encerrar")}</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        ) : null}
         {evento ? <LancarEvento contratoId={id} forma={evento} onFechar={() => setEvento(null)} /> : null}
       </DialogContent>
     </Dialog>

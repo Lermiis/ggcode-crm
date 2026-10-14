@@ -56,7 +56,12 @@ export function Contratos({ podeGerenciar }: { podeGerenciar: boolean }) {
         ))}
       </div>
 
-      {aba === "cobrancas" ? (
+      {aba === "cobrancas" && cobrancas.isError ? (
+        <div className="flex items-center gap-3 text-sm text-danger">
+          {t("Não foi possível carregar.")}
+          <Button size="sm" variant="outline" onClick={() => void cobrancas.refetch()}>{t("Tentar de novo")}</Button>
+        </div>
+      ) : aba === "cobrancas" ? (
         <ListaDeCobrancas filtro={filtro} onFiltro={setFiltro} carregando={cobrancas.isLoading}
           cobrancas={cobrancas.data?.cobrancas ?? []} podeGerenciar={podeGerenciar} />
       ) : (

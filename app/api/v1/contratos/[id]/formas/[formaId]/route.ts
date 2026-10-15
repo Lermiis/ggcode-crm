@@ -14,6 +14,7 @@ import { editarFormaSchema, refazerParcelamentoSchema } from "@/lib/contratos/es
 import { hojeNoFuso } from "@/lib/contratos/regras";
 import { logger } from "@/lib/logger";
 
+import { requireSupportWrite } from "@/lib/impersonate/support";
 import { entrar, respostaDeErro } from "../../../_comum";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,8 @@ const agora = () => new Date().toISOString();
 
 export async function PATCH(req: NextRequest, ctx: Ctx): Promise<Response> {
   const requestId = randomUUID();
+  const supportDenied = await requireSupportWrite();
+  if (supportDenied) return supportDenied;
   const ent = await entrar("editar", "contrato_formas", requestId);
   if (!ent.ok) return ent.response;
   const { supabase, orgId } = ent;
@@ -94,6 +97,8 @@ export async function PATCH(req: NextRequest, ctx: Ctx): Promise<Response> {
 export async function POST(req: NextRequest, ctx: Ctx): Promise<Response> {
   const requestId = randomUUID();
   if (new URL(req.url).searchParams.get("acao") !== "refazer") return fail("validation_failed", "Ação inválida.", 422, { requestId });
+  const supportDenied = await requireSupportWrite();
+  if (supportDenied) return supportDenied;
   const ent = await entrar("editar", "contrato_formas", requestId);
   if (!ent.ok) return ent.response;
   const { supabase, orgId } = ent;

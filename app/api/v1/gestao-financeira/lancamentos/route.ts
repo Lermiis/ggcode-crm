@@ -7,6 +7,7 @@ import { audit } from "@/lib/audit";
 import { carregarLancamentos } from "@/lib/gestao-financeira/carregar";
 import { lancamentoSchema, parceladoSchema } from "@/lib/gestao-financeira/esquemas";
 
+import { requireSupportWrite } from "@/lib/impersonate/support";
 import { MES, entrar, protegido, respostaDeErro } from "../_comum";
 
 export const dynamic = "force-dynamic";
@@ -49,6 +50,8 @@ export async function GET(req: NextRequest): Promise<Response> {
 /** Corpo com `parcelas` = parcelado; sem = lançamento avulso. */
 export async function POST(req: NextRequest): Promise<Response> {
   const requestId = randomUUID();
+  const supportDenied = await requireSupportWrite();
+  if (supportDenied) return supportDenied;
   const g = await entrar("editar", "gestao_financeira", requestId);
   if (!g.ok) return g.response;
   const corpo = (await req.json().catch(() => ({}))) as Record<string, unknown>;

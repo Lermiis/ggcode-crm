@@ -4,12 +4,15 @@ import { randomUUID } from "node:crypto";
 import { ok } from "@/lib/api/wrappers";
 import { nomeDoContato } from "@/lib/contacts/rotulo-do-contato";
 
+import { requireSupportWrite } from "@/lib/impersonate/support";
 import { entrar, respostaDeErro } from "../_comum";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<Response> {
   const requestId = randomUUID();
+  const supportDenied = await requireSupportWrite();
+  if (supportDenied) return supportDenied;
   const ent = await entrar("editar", "contratos", requestId);
   if (!ent.ok) return ent.response;
   const { supabase, orgId } = ent;

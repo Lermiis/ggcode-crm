@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 
 import { ok } from "@/lib/api/wrappers";
 
+import { requireSupportWrite } from "@/lib/impersonate/support";
 import { entrar, respostaDeErro } from "../../../_comum";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,8 @@ type Ctx = { params: Promise<{ id: string }> };
 
 export async function POST(_req: NextRequest, ctx: Ctx): Promise<Response> {
   const requestId = randomUUID();
+  const supportDenied = await requireSupportWrite();
+  if (supportDenied) return supportDenied;
   const g = await entrar("editar", "gestao_financeira", requestId);
   if (!g.ok) return g.response;
   const { id } = await ctx.params;

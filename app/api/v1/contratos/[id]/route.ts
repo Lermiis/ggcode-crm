@@ -7,6 +7,7 @@ import { audit } from "@/lib/audit";
 import { alterarContratoSchema } from "@/lib/contratos/esquemas";
 import { hojeNoFuso } from "@/lib/contratos/regras";
 
+import { requireSupportWrite } from "@/lib/impersonate/support";
 import { achatarCobranca, entrar, respostaDeErro, SELECT_COBRANCA } from "../_comum";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +38,8 @@ export async function GET(_req: NextRequest, ctx: Ctx): Promise<Response> {
 
 export async function PATCH(req: NextRequest, ctx: Ctx): Promise<Response> {
   const requestId = randomUUID();
+  const supportDenied = await requireSupportWrite();
+  if (supportDenied) return supportDenied;
   const ent = await entrar("editar", "contratos", requestId);
   if (!ent.ok) return ent.response;
   const { supabase, orgId } = ent;

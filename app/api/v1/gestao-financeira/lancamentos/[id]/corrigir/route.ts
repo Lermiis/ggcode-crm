@@ -6,6 +6,7 @@ import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { lancamentoEdicaoSchema } from "@/lib/gestao-financeira/esquemas";
 
+import { requireSupportWrite } from "@/lib/impersonate/support";
 import { entrar, respostaDeErro } from "../../../_comum";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,8 @@ type Ctx = { params: Promise<{ id: string }> };
 /** Corrigir lançamento PAGO: a RPC estorna o original e lança o novo; devolve o id do novo. */
 export async function POST(req: NextRequest, ctx: Ctx): Promise<Response> {
   const requestId = randomUUID();
+  const supportDenied = await requireSupportWrite();
+  if (supportDenied) return supportDenied;
   const g = await entrar("editar", "gestao_financeira", requestId);
   if (!g.ok) return g.response;
   const { id } = await ctx.params;

@@ -4,7 +4,6 @@ import { fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { moduloAusente } from "@/lib/contratos/modulo";
 import { exigirAcesso } from "@/lib/gestao-financeira/acesso";
-import { requireSupportWrite } from "@/lib/impersonate/support";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 
@@ -49,12 +48,8 @@ type Entrada =
   | { ok: true; supabase: SupabaseClient; orgId: string; userId: string }
   | { ok: false; response: Response };
 
-/** Sessão `viewer` + fn_gf_pode(ver|editar). Escrita também passa pelo teto do suporte. */
+/** Sessão `viewer` + fn_gf_pode(ver|editar). A guarda de suporte (requireSupportWrite) fica no handler mutante. */
 export async function entrar(nivel: "ver" | "editar", resource: string, requestId: string): Promise<Entrada> {
-  if (nivel === "editar") {
-    const negado = await requireSupportWrite();
-    if (negado) return { ok: false, response: negado };
-  }
   const authz = await requireRole("viewer", { requestId, resource });
   if (!authz.ok) return { ok: false, response: authz.response };
   const supabase = (await createClient()) as unknown as SupabaseClient;

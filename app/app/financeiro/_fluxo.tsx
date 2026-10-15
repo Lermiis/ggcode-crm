@@ -27,7 +27,7 @@ export function AbaFluxo() {
               <tbody className="divide-y divide-border tabular-nums">
                 {linhas.map((l) => (
                   <tr key={l.mes} className={l.projetado ? "italic text-text-muted" : ""}>
-                    <td className="px-4 py-2">{mesCurto(l.mes)}{l.projetado ? <span className="ml-2 rounded bg-surface px-1.5 py-0.5 text-xs not-italic">{t("previsto")}</span> : null}</td>
+                    <td className="px-4 py-2">{mesCurto(l.mes)}{l.projetado ? <span className="ml-2 rounded-md bg-surface px-1.5 py-0.5 text-xs not-italic">{t("previsto")}</span> : null}</td>
                     <td className="px-4 py-2 text-right">{brl(l.entradas)}</td>
                     <td className="px-4 py-2 text-right">{brl(l.saidas)}</td>
                     <td className={`px-4 py-2 text-right font-medium ${l.saldo < 0 ? "text-error" : ""}`}>{brl(l.saldo)}</td>

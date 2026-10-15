@@ -15468,7 +15468,7 @@ export const DICIONARIO: Traducoes = {
   "Nova entrada": { es: "Nueva entrada" },
   "Nova saída": { es: "Nueva salida" },
   "Outras despesas": { es: "Otros gastos" },
-  "Pago": { es: "Pagado" },
+  "Quitado": { es: "Pagado" },
   "Parcelado": { es: "En cuotas" },
   "Ponto de equilíbrio": { es: "Punto de equilibrio" },
   "Primeira data": { es: "Primera fecha" },

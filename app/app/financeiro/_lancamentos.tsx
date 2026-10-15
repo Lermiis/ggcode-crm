@@ -51,7 +51,7 @@ export function AbaLancamentos({ podeEditar }: { podeEditar: boolean }) {
           {(cats.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
         </select>
         <select className={selectCls} value={situacao} onChange={(e) => setSituacao(e.target.value)} aria-label={t("Situação")}>
-          <option value="">{t("Qualquer situação")}</option><option value="pending">{t("Pendente")}</option><option value="paid">{t("Pago")}</option>
+          <option value="">{t("Qualquer situação")}</option><option value="pending">{t("Pendente")}</option><option value="paid">{t("Quitado")}</option>
         </select>
         <Button size="sm" variant="ghost" className="ml-auto" disabled={!prontoParaForm} onClick={() => setRecorr(true)}>{t("Recorrências")}</Button>
         {podeEditar ? (
@@ -75,8 +75,8 @@ export function AbaLancamentos({ podeEditar }: { podeEditar: boolean }) {
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">
                       {l.description || "—"}
-                      {l.parcela ? <span className="ml-2 rounded bg-surface px-1.5 py-0.5 text-xs font-normal">{l.parcela.numero}/{l.parcela.total}</span> : null}
-                      {l.recorrente ? <span className="ml-2 rounded bg-surface px-1.5 py-0.5 text-xs font-normal">{t("mensal")}</span> : null}
+                      {l.parcela ? <span className="ml-2 rounded-md bg-surface px-1.5 py-0.5 text-xs font-normal">{l.parcela.numero}/{l.parcela.total}</span> : null}
+                      {l.recorrente ? <span className="ml-2 rounded-md bg-surface px-1.5 py-0.5 text-xs font-normal">{t("mensal")}</span> : null}
                     </div>
                     <div className="truncate text-xs text-text-muted">{l.categoria?.nome ?? "—"} · {l.conta.nome}</div>
                   </div>
@@ -84,7 +84,7 @@ export function AbaLancamentos({ podeEditar }: { podeEditar: boolean }) {
                     {l.direction === "out" ? "−" : ""}{brl(l.amount_cents)}
                   </span>
                   <span className={`w-20 text-xs ${atrasado ? "text-error" : "text-text-muted"}`}>
-                    {l.status === "paid" ? t("Pago") : atrasado ? t("Atrasado") : t("Pendente")}
+                    {l.status === "paid" ? t("Quitado") : atrasado ? t("Atrasado") : t("Pendente")}
                   </span>
                   {podeEditar ? (
                     <span className="flex gap-1">

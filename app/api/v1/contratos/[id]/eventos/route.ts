@@ -6,6 +6,7 @@ import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { lancarEventoSchema } from "@/lib/contratos/esquemas";
 
+import { requireSupportWrite } from "@/lib/impersonate/support";
 import { achatarCobranca, entrar, respostaDeErro, SELECT_COBRANCA } from "../../_comum";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,8 @@ type Ctx = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, ctx: Ctx): Promise<Response> {
   const requestId = randomUUID();
+  const supportDenied = await requireSupportWrite();
+  if (supportDenied) return supportDenied;
   const ent = await entrar("editar", "contratos", requestId);
   if (!ent.ok) return ent.response;
   const { supabase, orgId } = ent;
